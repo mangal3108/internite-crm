@@ -36,11 +36,13 @@ function resolveWebSocketUrl() {
     base = `${window.location.origin}/ws`
   }
 
+  // An explicit VITE_WS_URL is trusted as-is: hosts whose frontend proxy cannot carry
+  // WebSocket upgrades (e.g. Render static sites) point it straight at the backend.
   try {
     const url = new URL(base, window.location.origin)
     const currentHost = window.location.hostname
     const isLocal = LOCAL_HOSTS.includes(currentHost)
-    if (!isLocal && (url.hostname !== currentHost || url.port)) {
+    if (!explicit && !isLocal && (url.hostname !== currentHost || url.port)) {
       base = `${window.location.origin}/ws`
     }
   } catch {

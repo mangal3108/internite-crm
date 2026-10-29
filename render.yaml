@@ -21,10 +21,32 @@ services:
         generateValue: true
 
       # ── CORS (frontend origin + credentialed requests) ─
+      # If Render gives the frontend a different onrender.com address, update it here.
       - key: CORS_ORIGINS
-        value: "https://nexacrmai.com,https://www.nexacrmai.com"
+        value: "https://nexacrm-frontend.onrender.com,https://nexacrmai.com,https://www.nexacrmai.com"
       - key: CORS_ALLOW_CREDENTIALS
         value: "true"
+      - key: AUTH_COOKIE_SECURE
+        value: "true"
+
+      # ── Twilio (set manually in Render dashboard) ──────────────
+      # TwiML App Voice URL: https://nexacrm-backend.onrender.com/api/calls/twilio/voice
+      - key: TWILIO_ACCOUNT_SID
+        sync: false
+      - key: TWILIO_AUTH_TOKEN
+        sync: false
+      - key: TWILIO_PHONE_NUMBERS
+        sync: false
+      - key: TWILIO_DEFAULT_FROM_NUMBER
+        sync: false
+      - key: TWILIO_API_KEY_SID
+        sync: false
+      - key: TWILIO_API_KEY_SECRET
+        sync: false
+      - key: TWILIO_TWIML_APP_SID
+        sync: false
+      - key: TWILIO_STATUS_CALLBACK_BASE_URL
+        value: https://nexacrm-backend.onrender.com
 
       # ── Facebook / Meta (set manually in Render dashboard) ──────
       - key: META_APP_ID
@@ -65,12 +87,20 @@ services:
     envVars:
       - key: VITE_API_BASE_URL
         value: /api
+      # Static-site rewrites cannot carry WebSocket upgrades, so live notifications go straight to the backend.
+      - key: VITE_WS_URL
+        value: wss://nexacrm-backend.onrender.com/ws
       - key: VITE_API_TIMEOUT_MS
         value: "45000"
       - key: VITE_LOGIN_TIMEOUT_MS
         value: "60000"
 
     routes:
+      # Proxy API calls to the backend so the browser sees one origin (login cookies keep working).
+      # If Render gives the backend a different onrender.com address, update it here and in VITE_WS_URL.
+      - type: rewrite
+        source: /api/*
+        destination: https://nexacrm-backend.onrender.com/api/*
       # Serve index.html for all paths so React Router works
       - type: rewrite
         source: /*
