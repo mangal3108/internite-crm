@@ -11,7 +11,7 @@ import { useSoftphoneStore } from '../../store/softphoneStore'
 import PhoneInputWithCountry from '../ui/PhoneInputWithCountry'
 import TwilioNumbersHint, { numberLabel, VerifiedNumbersPicker } from './TwilioNumbersHint'
 
-const DIALER_MODE_KEY = 'nexacrm_dialer_call_mode'
+const DIALER_MODE_KEY = 'internite_dialer_call_mode'
 
 const DIAL_KEYS = [
   { digit: '1', letters: '' },
@@ -61,10 +61,10 @@ export default function DirectDialerModal({ isOpen, onClose, initialNumber = '',
   const [activeTab, setActiveTab] = useState('dialer') // 'dialer' | 'recent'
   const [callMode, setCallMode] = useState(() => localStorage.getItem(DIALER_MODE_KEY) || 'laptop') // 'laptop' | 'direct' | 'ai'
   const [toNumber, setToNumber] = useState(initialNumber || initialLead?.phone || '')
-  const [agentNumber, setAgentNumber] = useState(() => localStorage.getItem('nexacrm_agent_phone') || user?.phone || '')
+  const [agentNumber, setAgentNumber] = useState(() => localStorage.getItem('internite_agent_phone') || user?.phone || '')
   const [callOptions, setCallOptions] = useState(null)
   const [loadingOptions, setLoadingOptions] = useState(true)
-  const [selectedFromNumber, setSelectedFromNumber] = useState(() => localStorage.getItem('nexacrm_call_from_number') || '')
+  const [selectedFromNumber, setSelectedFromNumber] = useState(() => localStorage.getItem('internite_call_from_number') || '')
   const [customFromNumber, setCustomFromNumber] = useState('')
   const [isCustomFrom, setIsCustomFrom] = useState(false)
   const [aiScript, setAiScript] = useState('Hello, this is Internite CRM calling. Is this a good time to speak?')
@@ -199,7 +199,7 @@ export default function DirectDialerModal({ isOpen, onClose, initialNumber = '',
     } else {
       setIsCustomFrom(false)
       setSelectedFromNumber(value)
-      localStorage.setItem('nexacrm_call_from_number', value)
+      localStorage.setItem('internite_call_from_number', value)
     }
   }
 
@@ -219,7 +219,7 @@ export default function DirectDialerModal({ isOpen, onClose, initialNumber = '',
         toast.error('Please enter a custom Twilio caller ID.')
         return
       }
-      if (effectiveFromNumber) localStorage.setItem('nexacrm_call_from_number', effectiveFromNumber)
+      if (effectiveFromNumber) localStorage.setItem('internite_call_from_number', effectiveFromNumber)
       useSoftphoneStore.getState().startCall({ number: toNumber.trim(), fromNumber: effectiveFromNumber, lead: initialLead })
       onClose()
       return
@@ -239,8 +239,8 @@ export default function DirectDialerModal({ isOpen, onClose, initialNumber = '',
     try {
       if (callMode === 'direct') {
         // Direct Twilio call
-        localStorage.setItem('nexacrm_agent_phone', agentNumber.trim())
-        if (effectiveFromNumber) localStorage.setItem('nexacrm_call_from_number', effectiveFromNumber)
+        localStorage.setItem('internite_agent_phone', agentNumber.trim())
+        if (effectiveFromNumber) localStorage.setItem('internite_call_from_number', effectiveFromNumber)
 
         const payload = {
           toNumber: toNumber.trim(),

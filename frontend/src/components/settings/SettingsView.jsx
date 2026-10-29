@@ -40,7 +40,7 @@ const INTEGRATIONS = [
   { name: 'Tally XML',            status: 'pending',   icon: '📊', color: 'bg-brand-50 dark:bg-brand-950/20' },
 ]
 
-const SETTINGS_STORAGE_KEY = 'nexacrm-settings'
+const SETTINGS_STORAGE_KEY = 'internite-settings'
 const DEFAULT_GENERAL_SETTINGS = [
   { key: 'companyName', label: 'Company Name', value: 'Internite Corporation' },
   { key: 'timezone', label: 'Timezone', value: 'Asia/Kolkata (IST)' },

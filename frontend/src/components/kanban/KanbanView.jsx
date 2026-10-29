@@ -1261,7 +1261,7 @@ export default function KanbanPage() {
         })
       })
 
-      doc.save(`nexacrm-pipeline-${today.toISOString().slice(0, 10)}.pdf`)
+      doc.save(`internite-pipeline-${today.toISOString().slice(0, 10)}.pdf`)
       toast.success('Pipeline PDF downloaded.')
     } catch (err) {
       toast.error(err?.message || 'Failed to download pipeline PDF')

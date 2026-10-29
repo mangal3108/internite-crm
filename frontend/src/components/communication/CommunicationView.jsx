@@ -21,8 +21,8 @@ const CHANNEL_CONFIG = {
 }
 
 // ── Session storage keys ─────────────────────────────────────
-const HISTORY_KEY = 'nexacrm_wa_history'
-const CONVERSATIONS_KEY = 'nexacrm_conversations'
+const HISTORY_KEY = 'internite_wa_history'
+const CONVERSATIONS_KEY = 'internite_conversations'
 const LEGACY_DUMMY_IDS = new Set(['email-1', 'insta-1', 'linkedin-1', 'facebook-1'])
 const LEGACY_DUMMY_NAMES = new Set([
   'Ramesh Patel',
@@ -321,8 +321,8 @@ export default function CommunicationPage() {
         setCommunicationRefreshTick((tick) => tick + 1)
       }
     }
-    window.addEventListener('nexacrm:notification', handleRealtimeNotification)
-    return () => window.removeEventListener('nexacrm:notification', handleRealtimeNotification)
+    window.addEventListener('internite:notification', handleRealtimeNotification)
+    return () => window.removeEventListener('internite:notification', handleRealtimeNotification)
   }, [])
 
   const isChannelConnected = (channel) => {

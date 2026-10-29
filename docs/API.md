@@ -25,7 +25,7 @@ Login and receive access + refresh tokens.
   "expiresIn": 86400000,
   "user": {
     "id": 1, "name": "Saurabh Kumar",
-    "email": "saurabhke4@gmail.com", "role": "ADMIN"
+    "email": "companyadmin@internite.com", "role": "COMPANY_ADMIN"
   }
 }
 ```
@@ -315,8 +315,8 @@ export async function sendCallWebhookUpdate(
     timeoutMs?: number
   }
 ) {
-  const baseUrl = (config?.baseUrl ?? process.env.NEXACRM_BASE_URL ?? 'http://localhost:8080').replace(/\/+$/, '')
-  const secret = config?.secret ?? process.env.NEXACRM_CALL_WEBHOOK_SECRET ?? ''
+  const baseUrl = (config?.baseUrl ?? process.env.INTERNITE_BASE_URL ?? 'http://localhost:8080').replace(/\/+$/, '')
+  const secret = config?.secret ?? process.env.INTERNITE_CALL_WEBHOOK_SECRET ?? ''
   const timeoutMs = config?.timeoutMs ?? 10000
 
   const controller = new AbortController()

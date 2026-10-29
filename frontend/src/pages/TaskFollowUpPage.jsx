@@ -876,7 +876,7 @@ export default function TaskFollowUpPage() {
     setBackupExporting(true)
     try {
       const blob = await leadsAPI.export({ format: 'xlsx' })
-      downloadBlobFile(blob, `nexacrm-leads-${new Date().toISOString().slice(0, 10)}.xlsx`)
+      downloadBlobFile(blob, `internite-leads-${new Date().toISOString().slice(0, 10)}.xlsx`)
       toast.success('All leads exported to Excel.')
     } catch (err) {
       toast.error(err?.message || 'Unable to export leads')
@@ -901,7 +901,7 @@ export default function TaskFollowUpPage() {
 
       const payload = await readJsonFile(file)
       const records = Array.isArray(payload?.leads) ? payload.leads : []
-      if (payload?.schema !== 'nexacrm.task-followup.backup' || !records.length) {
+      if (payload?.schema !== 'internite.task-followup.backup' || !records.length) {
         throw new Error('This file is not a Task Follow-up JSON export.')
       }
 

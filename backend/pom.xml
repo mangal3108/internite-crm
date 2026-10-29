@@ -11,8 +11,8 @@
     <relativePath/>
   </parent>
 
-  <groupId>com.nexacrm</groupId>
-  <artifactId>nexacrm-ai-backend</artifactId>
+  <groupId>com.internite</groupId>
+  <artifactId>internite-crm-backend</artifactId>
   <version>1.0.0</version>
   <name>Internite CRM Backend</name>
   <description>Production-ready AI-powered CRM backend</description>

@@ -51,20 +51,20 @@ const SETUP_CARDS = [
 
 export default function CallLeadModal({ lead, onClose, onCallSuccess }) {
   const { user } = useAuthStore()
-  const [callMode, setCallMode] = useState(() => localStorage.getItem('nexacrm_call_mode') || 'direct') // 'direct' | 'ai'
+  const [callMode, setCallMode] = useState(() => localStorage.getItem('internite_call_mode') || 'direct') // 'direct' | 'ai'
   const [loadingOptions, setLoadingOptions] = useState(true)
   const [callOptions, setCallOptions] = useState(null)
   const [selectedSetup, setSelectedSetup] = useState(() => {
-    return localStorage.getItem('nexacrm_call_setup') || 'bolna_twilio'
+    return localStorage.getItem('internite_call_setup') || 'bolna_twilio'
   })
   const [selectedFromNumber, setSelectedFromNumber] = useState(() => {
-    return localStorage.getItem('nexacrm_call_from_number') || ''
+    return localStorage.getItem('internite_call_from_number') || ''
   })
   const [customFromNumber, setCustomFromNumber] = useState('')
   const [isCustomFrom, setIsCustomFrom] = useState(false)
   const [toNumber, setToNumber] = useState(lead?.phone || '')
   const [agentNumber, setAgentNumber] = useState(() => {
-    return localStorage.getItem('nexacrm_agent_phone') || user?.phone || ''
+    return localStorage.getItem('internite_agent_phone') || user?.phone || ''
   })
   const [script, setScript] = useState(() => {
     const leadName = lead?.name?.trim() || 'there'
@@ -89,7 +89,7 @@ export default function CallLeadModal({ lead, onClose, onCallSuccess }) {
       .then((data) => {
         if (!alive) return
         setCallOptions(data)
-        if (data?.activeSetup && !localStorage.getItem('nexacrm_call_setup')) {
+        if (data?.activeSetup && !localStorage.getItem('internite_call_setup')) {
           setSelectedSetup(data.activeSetup)
         }
         const liveNumbers = data?.phoneNumbers || []
@@ -164,7 +164,7 @@ export default function CallLeadModal({ lead, onClose, onCallSuccess }) {
 
   const handleSetupSelect = (setupId) => {
     setSelectedSetup(setupId)
-    localStorage.setItem('nexacrm_call_setup', setupId)
+    localStorage.setItem('internite_call_setup', setupId)
   }
 
   const handleFromNumberChange = (value) => {
@@ -173,13 +173,13 @@ export default function CallLeadModal({ lead, onClose, onCallSuccess }) {
     } else {
       setIsCustomFrom(false)
       setSelectedFromNumber(value)
-      localStorage.setItem('nexacrm_call_from_number', value)
+      localStorage.setItem('internite_call_from_number', value)
     }
   }
 
   const handleModeSwitch = (mode) => {
     setCallMode(mode)
-    localStorage.setItem('nexacrm_call_mode', mode)
+    localStorage.setItem('internite_call_mode', mode)
   }
 
   const handleStartCall = async (e) => {
@@ -203,8 +203,8 @@ export default function CallLeadModal({ lead, onClose, onCallSuccess }) {
     try {
       if (callMode === 'direct') {
         // Direct human-to-human call via Twilio
-        if (effectiveFromNumber) localStorage.setItem('nexacrm_call_from_number', effectiveFromNumber)
-        localStorage.setItem('nexacrm_agent_phone', agentNumber.trim())
+        if (effectiveFromNumber) localStorage.setItem('internite_call_from_number', effectiveFromNumber)
+        localStorage.setItem('internite_agent_phone', agentNumber.trim())
 
         const payload = {
           toNumber: toNumber.trim(),
@@ -231,8 +231,8 @@ export default function CallLeadModal({ lead, onClose, onCallSuccess }) {
         }
 
         const res = await leadsAPI.callNow(lead.id, payload)
-        if (effectiveFromNumber) localStorage.setItem('nexacrm_call_from_number', effectiveFromNumber)
-        localStorage.setItem('nexacrm_call_setup', selectedSetup)
+        if (effectiveFromNumber) localStorage.setItem('internite_call_from_number', effectiveFromNumber)
+        localStorage.setItem('internite_call_setup', selectedSetup)
 
         const setupName = SETUP_CARDS.find(s => s.id === selectedSetup)?.name || selectedSetup
         toast.success(res?.message || `AI Call placed via ${setupName}!`)

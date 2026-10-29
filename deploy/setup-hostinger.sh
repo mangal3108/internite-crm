@@ -4,8 +4,8 @@
 
 set -e
 
-APP_DIR="/home/nexacrm"
-BACKEND_JAR="nexacrm-ai-backend-1.0.0.jar"
+APP_DIR="/home/internite"
+BACKEND_JAR="internite-crm-backend-1.0.0.jar"
 
 echo "=== Internite CRM Deployment Setup ==="
 
@@ -37,7 +37,7 @@ JWT_SECRET=CHANGE_ME_TO_A_RANDOM_64_CHARACTER_SECRET_STRING_FOR_PRODUCTION_USE
 PORT=8080
 
 # CORS - Update with your actual frontend URL
-CORS_ORIGINS=https://nexacrmai.com,https://www.nexacrmai.com
+CORS_ORIGINS=
 
 # Cookie settings for HTTP (change to true when you add SSL)
 AUTH_COOKIE_SECURE=true
@@ -55,7 +55,7 @@ echo "Created .env file at $APP_DIR/backend/.env"
 echo ">>> IMPORTANT: Edit the .env file and change JWT_SECRET! <<<"
 
 # 4. Create systemd service for the backend
-sudo tee /etc/systemd/system/nexacrm.service > /dev/null << 'SERVICEEOF'
+sudo tee /etc/systemd/system/internite.service > /dev/null << 'SERVICEEOF'
 [Unit]
 Description=Internite CRM Backend
 After=network.target
@@ -63,11 +63,11 @@ After=network.target
 [Service]
 Type=simple
 User=root
-WorkingDirectory=/home/nexacrm/backend
-ExecStart=/usr/bin/java -jar /home/nexacrm/backend/nexacrm-ai-backend-1.0.0.jar
+WorkingDirectory=/home/internite/backend
+ExecStart=/usr/bin/java -jar /home/internite/backend/internite-crm-backend-1.0.0.jar
 Restart=always
 RestartSec=10
-EnvironmentFile=/home/nexacrm/backend/.env
+EnvironmentFile=/home/internite/backend/.env
 
 [Install]
 WantedBy=multi-user.target
@@ -75,8 +75,8 @@ SERVICEEOF
 
 # 5. Reload systemd and start the service
 sudo systemctl daemon-reload
-sudo systemctl enable nexacrm
-sudo systemctl start nexacrm
+sudo systemctl enable internite
+sudo systemctl start internite
 
 echo ""
 echo "=== Deployment Complete ==="
@@ -87,5 +87,5 @@ echo "Next steps:"
 echo "1. Edit $APP_DIR/backend/.env and set a real JWT_SECRET"
 echo "2. In CloudPanel, create a Static site pointing to $APP_DIR/frontend"
 echo "3. In CloudPanel, set up a reverse proxy for the API on port 8080"
-echo "4. Restart: sudo systemctl restart nexacrm"
-echo "5. Check logs: sudo journalctl -u nexacrm -f"
+echo "4. Restart: sudo systemctl restart internite"
+echo "5. Check logs: sudo journalctl -u internite -f"

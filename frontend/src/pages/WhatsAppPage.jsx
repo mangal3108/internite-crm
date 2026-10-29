@@ -143,7 +143,7 @@ export default function WhatsAppPage() {
       if (body(res)?.qrCode) {
         setQrData(body(res).qrCode)
       } else {
-        const startRes = await openwaAPI.startSession('nexacrm-session')
+        const startRes = await openwaAPI.startSession('internite-session')
         const qrRes = await openwaAPI.getQR(body(startRes)?.sessionId)
         setQrData(body(qrRes)?.qrCode || null)
       }
@@ -158,7 +158,7 @@ export default function WhatsAppPage() {
   const handleStartSession = async () => {
     try {
       toast.loading('Starting OpenWA session...', { id: 'start-session' })
-      const res = await openwaAPI.startSession('nexacrm-session')
+      const res = await openwaAPI.startSession('internite-session')
       toast.success('Session started! Fetching QR code...', { id: 'start-session' })
       await fetchStatus()
       handleOpenQR()

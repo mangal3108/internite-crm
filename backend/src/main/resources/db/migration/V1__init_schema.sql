@@ -290,7 +290,7 @@ CREATE TABLE IF NOT EXISTS audit_logs (
 
 -- Seed: Default tenant
 INSERT INTO tenants (id, name, slug, plan, is_active, max_users)
-VALUES (1, 'Internite CRM Demo Co.', 'nexacrm-demo', 'ENTERPRISE', TRUE, 50)
+VALUES (1, 'Internite CRM Demo Co.', 'internite-demo', 'ENTERPRISE', TRUE, 50)
 ON CONFLICT DO NOTHING;
 
 -- Seed: Default pipeline

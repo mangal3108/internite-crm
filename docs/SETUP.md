@@ -53,7 +53,7 @@ mvn clean package -DskipTests
 mvn spring-boot:run
 
 # Or run the JAR directly:
-java -jar target/nexacrm-ai-backend-1.0.0.jar
+java -jar target/internite-crm-backend-1.0.0.jar
 ```
 
 The backend starts at **http://localhost:8080**  
@@ -115,12 +115,12 @@ Open **http://localhost:5173** and sign in with:
 
 | Field | Value |
 |-------|-------|
-| Email | `platformadmin@nexacrm.com` |
+| Email | `superadmin@internite.com` |
 | Password | `demo1234` |
-| Role | Platform Admin |
+| Role | Super Admin |
 
 > All demo users share the password `demo1234`.  
-> Other accounts: `companyadmin@nexacrm.com`, `saurabhke4@gmail.com`, `priya@nexacrm.com`, `rahul@nexacrm.com`, `amit@nexacrm.com`, `normaluser@nexacrm.com`
+> Other accounts: `companyadmin@internite.com`, `priya@internite.com`, `rahul@internite.com`, `amit@internite.com`, `neha@internite.com`, `normaluser@internite.com`
 
 ---
 
@@ -187,8 +187,8 @@ Open **http://localhost:5173** and sign in with:
 
 ```bash
 # Build images
-docker build -t nexacrm-backend ./backend
-docker build -t nexacrm-frontend ./frontend
+docker build -t internite-backend ./backend
+docker build -t internite-frontend ./frontend
 
 # Run with Docker Compose
 docker-compose up -d
@@ -220,7 +220,7 @@ server {
 
     # Frontend
     location / {
-        root /var/www/nexacrm/frontend/dist;
+        root /var/www/internite/frontend/dist;
         try_files $uri $uri/ /index.html;
     }
 
@@ -309,8 +309,8 @@ Internite CRM/
 │   └── .env
 │
 ├── backend/                         # Spring Boot application
-│   └── src/main/java/com/nexacrm/
-│       ├── NexaCrmApplication.java  # Entry point
+│   └── src/main/java/com/internite/
+│       ├── InterniteCrmApplication.java  # Entry point
 │       ├── model/                   # JPA entities
 │       │   ├── BaseEntity.java
 │       │   ├── User.java

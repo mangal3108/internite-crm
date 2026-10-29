@@ -13,7 +13,7 @@ export const useThemeStore = create(
       toggleTheme: () => set((s) => ({ theme: s.theme === 'dark' ? 'light' : 'dark' })),
     }),
     {
-      name: 'nexacrm-theme',
+      name: 'internite-theme',
       partialize: (state) => ({ theme: normalizeTheme(state.theme) }),
       migrate: (persistedState) => ({
         ...persistedState,

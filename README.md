@@ -45,7 +45,7 @@ cd frontend && npm install && npm run dev
 # http://localhost:8080/api/calls/webhook
 ```
 
-Open **http://localhost:5173** → login with `saurabhke4@gmail.com` / `demo1234`
+Open **http://localhost:5173** → login with `companyadmin@internite.com` / `demo1234`
 
 ---
 
@@ -84,13 +84,13 @@ Internite CRM/
 
 | Email | Password | Role |
 |-------|----------|------|
-| platformadmin@nexacrm.com | demo1234 | Platform Admin |
-| companyadmin@nexacrm.com | demo1234 | Company Admin |
-| saurabhke4@gmail.com | demo1234 | Admin |
-| priya@nexacrm.com | demo1234 | Manager |
-| rahul@nexacrm.com | demo1234 | Sales Exec |
-| amit@nexacrm.com | demo1234 | Sales Exec |
-| normaluser@nexacrm.com | demo1234 | Normal User |
+| superadmin@internite.com | demo1234 | Super Admin |
+| companyadmin@internite.com | demo1234 | Company Admin |
+| priya@internite.com | demo1234 | Manager |
+| rahul@internite.com | demo1234 | Sales Exec |
+| amit@internite.com | demo1234 | Sales Exec |
+| neha@internite.com | demo1234 | Sales Exec |
+| normaluser@internite.com | demo1234 | Normal User |
 
 ---
 

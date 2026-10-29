@@ -2,7 +2,7 @@ services:
 
   # ── Backend (Spring Boot) ──────────────────────────────────────
   - type: web
-    name: nexacrm-backend
+    name: internite-backend
     runtime: docker
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend
@@ -23,14 +23,14 @@ services:
       # ── CORS (frontend origin + credentialed requests) ─
       # If Render gives the frontend a different onrender.com address, update it here.
       - key: CORS_ORIGINS
-        value: "https://nexacrm-frontend-3jni.onrender.com,https://nexacrmai.com,https://www.nexacrmai.com"
+        value: "https://internite-frontend.onrender.com"
       - key: CORS_ALLOW_CREDENTIALS
         value: "true"
       - key: AUTH_COOKIE_SECURE
         value: "true"
 
       # ── Twilio (set manually in Render dashboard) ──────────────
-      # TwiML App Voice URL: https://nexacrm-backend-3jni.onrender.com/api/calls/twilio/voice
+      # TwiML App Voice URL: https://internite-backend.onrender.com/api/calls/twilio/voice
       - key: TWILIO_ACCOUNT_SID
         sync: false
       - key: TWILIO_AUTH_TOKEN
@@ -46,7 +46,11 @@ services:
       - key: TWILIO_TWIML_APP_SID
         sync: false
       - key: TWILIO_STATUS_CALLBACK_BASE_URL
-        value: https://nexacrm-backend-3jni.onrender.com
+        value: https://internite-backend.onrender.com
+
+      # Public links sent out (e.g. pipeline PDF in WhatsApp digests) point at the frontend.
+      - key: PUBLIC_BASE_URL
+        value: https://internite-frontend.onrender.com
 
       # ── Facebook / Meta (set manually in Render dashboard) ──────
       - key: META_APP_ID
@@ -78,7 +82,7 @@ services:
 
   # ── Frontend (React / Vite static site) ───────────────────────
   - type: web
-    name: nexacrm-frontend
+    name: internite-frontend
     runtime: static
     rootDir: frontend
     buildCommand: npm install && npm run build
@@ -89,7 +93,7 @@ services:
         value: /api
       # Static-site rewrites cannot carry WebSocket upgrades, so live notifications go straight to the backend.
       - key: VITE_WS_URL
-        value: wss://nexacrm-backend-3jni.onrender.com/ws
+        value: wss://internite-backend.onrender.com/ws
       - key: VITE_API_TIMEOUT_MS
         value: "45000"
       - key: VITE_LOGIN_TIMEOUT_MS
@@ -100,7 +104,7 @@ services:
       # If Render gives the backend a different onrender.com address, update it here and in VITE_WS_URL.
       - type: rewrite
         source: /api/*
-        destination: https://nexacrm-backend-3jni.onrender.com/api/*
+        destination: https://internite-backend.onrender.com/api/*
       # Serve index.html for all paths so React Router works
       - type: rewrite
         source: /*

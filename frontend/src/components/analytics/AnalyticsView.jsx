@@ -725,7 +725,7 @@ export default function AnalyticsPage() {
         doc.setPage(page)
         pdfFooter(doc, pdfReport, page, totalPages)
       }
-      doc.save(`nexacrm-lead-activity-engagement-${new Date().toISOString().slice(0, 10)}.pdf`)
+      doc.save(`internite-lead-activity-engagement-${new Date().toISOString().slice(0, 10)}.pdf`)
       toast.success(`Lead activity PDF downloaded (${totalPages} pages).`)
     } catch (err) {
       toast.error(err?.message || 'Failed to generate lead activity PDF')
@@ -739,7 +739,7 @@ export default function AnalyticsPage() {
     setExporting('xlsx')
     try {
       const blob = await analyticsAPI.exportReport({ format: 'xlsx', scope: 'lead-funnel', ...requestParams })
-      saveBlob(blob, `nexacrm-lead-performance-${new Date().toISOString().slice(0, 10)}.xlsx`)
+      saveBlob(blob, `internite-lead-performance-${new Date().toISOString().slice(0, 10)}.xlsx`)
       toast.success('Lead performance Excel report downloaded.')
     } catch (err) {
       toast.error(err?.message || 'Failed to download Excel report')

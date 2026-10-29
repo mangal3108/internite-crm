@@ -13,7 +13,7 @@ RUN mvn clean package -DskipTests -q
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
 
-COPY --from=build /app/target/nexacrm-ai-backend-*.jar app.jar
+COPY --from=build /app/target/internite-crm-backend-*.jar app.jar
 
 EXPOSE 8080
 

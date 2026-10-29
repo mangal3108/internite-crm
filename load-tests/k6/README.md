@@ -9,7 +9,7 @@ This folder contains a Grafana k6 script that exercises real Internite CRM route
 
 ## Script
 
-- [nexacrm-load-test.js](./nexacrm-load-test.js)
+- [internite-load-test.js](./internite-load-test.js)
 
 ## What it tests
 
@@ -43,41 +43,41 @@ Platform flow:
 
 ```bash
 k6 run ^
-  -e NEXACRM_BASE_URL=https://nexacrmai.com ^
-  -e NEXACRM_COMPANY_EMAIL=demo@gmail.com ^
-  -e NEXACRM_COMPANY_PASSWORD=demo1234 ^
-  -e NEXACRM_PLATFORM_EMAIL=saurabhke4@gmail.com ^
-  -e NEXACRM_PLATFORM_PASSWORD=demo1234 ^
-  load-tests/k6/nexacrm-load-test.js
+  -e INTERNITE_BASE_URL=https://internite-frontend.onrender.com ^
+  -e INTERNITE_COMPANY_EMAIL=demo@gmail.com ^
+  -e INTERNITE_COMPANY_PASSWORD=demo1234 ^
+  -e INTERNITE_PLATFORM_EMAIL=companyadmin@internite.com ^
+  -e INTERNITE_PLATFORM_PASSWORD=demo1234 ^
+  load-tests/k6/internite-load-test.js
 ```
 
 ## Useful overrides
 
-- `NEXACRM_COMPANY_READ_RPS`
-- `NEXACRM_PLATFORM_READ_RPS`
-- `NEXACRM_LOGIN_RPS`
-- `NEXACRM_COMPANY_READ_DURATION`
-- `NEXACRM_PLATFORM_READ_DURATION`
-- `NEXACRM_COMPANY_LOGIN_DURATION`
-- `NEXACRM_COMPANY_TENANT_ID`
-- `NEXACRM_PLATFORM_TENANT_ID`
-- `NEXACRM_INCLUDE_AI=true`
+- `INTERNITE_COMPANY_READ_RPS`
+- `INTERNITE_PLATFORM_READ_RPS`
+- `INTERNITE_LOGIN_RPS`
+- `INTERNITE_COMPANY_READ_DURATION`
+- `INTERNITE_PLATFORM_READ_DURATION`
+- `INTERNITE_COMPANY_LOGIN_DURATION`
+- `INTERNITE_COMPANY_TENANT_ID`
+- `INTERNITE_PLATFORM_TENANT_ID`
+- `INTERNITE_INCLUDE_AI=true`
 
 Example soak run:
 
 ```bash
 k6 run ^
-  -e NEXACRM_BASE_URL=https://nexacrmai.com ^
-  -e NEXACRM_COMPANY_EMAIL=demo@gmail.com ^
-  -e NEXACRM_COMPANY_PASSWORD=demo1234 ^
-  -e NEXACRM_PLATFORM_EMAIL=saurabhke4@gmail.com ^
-  -e NEXACRM_PLATFORM_PASSWORD=demo1234 ^
-  -e NEXACRM_COMPANY_READ_RPS=15 ^
-  -e NEXACRM_PLATFORM_READ_RPS=3 ^
-  -e NEXACRM_COMPANY_READ_DURATION=15m ^
-  -e NEXACRM_PLATFORM_READ_DURATION=15m ^
-  -e NEXACRM_LOGIN_DURATION=3m ^
-  load-tests/k6/nexacrm-load-test.js
+  -e INTERNITE_BASE_URL=https://internite-frontend.onrender.com ^
+  -e INTERNITE_COMPANY_EMAIL=demo@gmail.com ^
+  -e INTERNITE_COMPANY_PASSWORD=demo1234 ^
+  -e INTERNITE_PLATFORM_EMAIL=companyadmin@internite.com ^
+  -e INTERNITE_PLATFORM_PASSWORD=demo1234 ^
+  -e INTERNITE_COMPANY_READ_RPS=15 ^
+  -e INTERNITE_PLATFORM_READ_RPS=3 ^
+  -e INTERNITE_COMPANY_READ_DURATION=15m ^
+  -e INTERNITE_PLATFORM_READ_DURATION=15m ^
+  -e INTERNITE_LOGIN_DURATION=3m ^
+  load-tests/k6/internite-load-test.js
 ```
 
 ## Notes

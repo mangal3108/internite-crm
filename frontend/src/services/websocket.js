@@ -21,7 +21,7 @@ const normalizeJwtToken = (token) => {
 
 function emitRealtimeNotification(payload) {
   if (typeof window === 'undefined') return
-  window.dispatchEvent(new CustomEvent('nexacrm:notification', { detail: payload }))
+  window.dispatchEvent(new CustomEvent('internite:notification', { detail: payload }))
 }
 
 function resolveWebSocketUrl() {
