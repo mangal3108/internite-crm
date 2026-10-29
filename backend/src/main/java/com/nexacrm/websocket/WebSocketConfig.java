@@ -1,6 +1,7 @@
 package com.nexacrm.websocket;
 
 import com.nexacrm.security.JwtService;
+import com.nexacrm.security.TenantContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
@@ -58,7 +59,14 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                     return message;
                 }
 
+                // User lookup is tenant-scoped; inbound STOMP frames carry no tenant context.
+                boolean tenantSet = false;
                 try {
+                    Long tenantId = jwtService.extractTenantId(token);
+                    if (tenantId != null && TenantContext.currentTenantIdOrNull() == null) {
+                        TenantContext.setCurrentTenantId(tenantId);
+                        tenantSet = true;
+                    }
                     String username = jwtService.extractUsername(token);
                     if (username == null || username.isBlank()) {
                         return message;
@@ -77,6 +85,10 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                     accessor.setUser(authentication);
                 } catch (Exception ignored) {
                     // Let the connection proceed without a principal; user-specific delivery will simply no-op.
+                } finally {
+                    if (tenantSet) {
+                        TenantContext.clear();
+                    }
                 }
                 return message;
             }

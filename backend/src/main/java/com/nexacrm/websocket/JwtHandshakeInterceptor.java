@@ -2,6 +2,7 @@ package com.nexacrm.websocket;
 
 import com.nexacrm.model.User;
 import com.nexacrm.security.JwtService;
+import com.nexacrm.security.TenantContext;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -42,7 +43,14 @@ public class JwtHandshakeInterceptor implements HandshakeInterceptor {
             normalized = normalized.substring(7).trim();
         }
 
+        // User lookup is tenant-scoped, and the handshake does not pass through JwtAuthFilter.
+        boolean tenantSet = false;
         try {
+            Long tenantId = jwtService.extractTenantId(normalized);
+            if (tenantId != null && TenantContext.currentTenantIdOrNull() == null) {
+                TenantContext.setCurrentTenantId(tenantId);
+                tenantSet = true;
+            }
             String username = jwtService.extractUsername(normalized);
             if (username == null || username.isBlank()) {
                 return false;
@@ -52,10 +60,14 @@ public class JwtHandshakeInterceptor implements HandshakeInterceptor {
                 return false;
             }
             attributes.put("principal", userDetails);
-            attributes.put("tenantId", jwtService.extractTenantId(normalized));
+            attributes.put("tenantId", tenantId);
             return true;
         } catch (Exception ignored) {
             return false;
+        } finally {
+            if (tenantSet) {
+                TenantContext.clear();
+            }
         }
     }
 

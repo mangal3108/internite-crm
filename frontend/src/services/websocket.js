@@ -60,6 +60,20 @@ function resolveWebSocketUrl() {
   return base
 }
 
+// The handshake is authenticated by the access_token cookie, which the browser only sends to
+// its own host. When the socket goes to another host, pass the JWT as ?access_token= instead.
+function withHandshakeToken(url) {
+  const jwt = normalizeJwtToken(useAuthStore.getState().token)
+  try {
+    const parsed = new URL(url)
+    if (!jwt || parsed.host === window.location.host) return url
+    parsed.searchParams.set('access_token', jwt)
+    return parsed.toString()
+  } catch {
+    return url
+  }
+}
+
 export function connectWebSocket(onNotification) {
   destroyed = false
 
@@ -68,8 +82,12 @@ export function connectWebSocket(onNotification) {
   const connectHeaders = jwt ? { Authorization: `Bearer ${jwt}` } : {}
 
   stompClient = new Client({
-    brokerURL: resolveWebSocketUrl(),
+    brokerURL: withHandshakeToken(resolveWebSocketUrl()),
     connectHeaders,
+    // Re-read the token on every (re)connect so a refreshed JWT is used.
+    beforeConnect: (client) => {
+      client.brokerURL = withHandshakeToken(resolveWebSocketUrl())
+    },
     debug: import.meta.env.DEV ? (msg) => console.log(msg) : () => {},
     reconnectDelay: 5000,
     heartbeatIncoming: 10000,
