@@ -40,7 +40,7 @@ const formatNextAttempt = (value) => {
 export default function DashboardPage() {
   const navigate = useNavigate()
   const { user } = useAuthStore()
-  const firstName = (user?.name || 'User').trim().split(/\s+/)[0]
+  const displayName = (user?.name || 'User').trim()
   const getGreeting = () => {
     const hour = new Date().getHours()
     if (hour < 12) return 'Good Morning'
@@ -87,7 +87,7 @@ export default function DashboardPage() {
               Live Command Center
             </div>
             <h1 className="text-3xl font-bold leading-tight sm:text-4xl">
-              <GradientText>{getGreeting()}, {firstName}</GradientText>
+              <GradientText>{getGreeting()}, {displayName}</GradientText>
             </h1>
             <p className="mt-2 max-w-xl text-sm leading-6 text-slate-600 dark:text-slate-300">
               {new Date().toLocaleDateString('en-US', { timeZone: 'Asia/Kolkata', weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}

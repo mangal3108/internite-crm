@@ -348,9 +348,9 @@ export default function Topbar({ onMenuClick, onRefresh }) {
               {/* Online status badge */}
               <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-accent-400 border-2 border-white dark:border-[#141416]" />
             </div>
-            <span className="hidden sm:flex flex-col items-start leading-tight">
+            <span className="hidden sm:flex flex-col items-start leading-tight min-w-0">
               <span className="text-[10px] text-slate-400">{user?.role ? String(user.role).replace(/_/g, ' ').toLowerCase() : 'Signed in'}</span>
-              <span className="text-sm font-medium text-slate-800 dark:text-slate-200">{user?.name?.split(' ')[0]}</span>
+              <span className="text-sm font-medium text-slate-800 dark:text-slate-200 max-w-[160px] truncate" title={user?.name}>{user?.name}</span>
             </span>
             <ChevronDown className="w-4 h-4 text-slate-400" />
           </button>
