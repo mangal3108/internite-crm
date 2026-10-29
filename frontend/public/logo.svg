@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 110" fill="none">
+  <defs>
+    <linearGradient id="nGrad" x1="10%" y1="0%" x2="90%" y2="100%">
+      <stop offset="0%" stop-color="#60c8ff"/>
+      <stop offset="40%" stop-color="#3b82f6"/>
+      <stop offset="100%" stop-color="#1d4ed8"/>
+    </linearGradient>
+    <linearGradient id="crmGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#22d3ee"/>
+      <stop offset="100%" stop-color="#06b6d4"/>
+    </linearGradient>
+    <linearGradient id="nShine" x1="0%" y1="0%" x2="60%" y2="100%">
+      <stop offset="0%" stop-color="#93c5fd" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#1d4ed8" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="glow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="2.5" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="dotGlow" x="-100%" y="-100%" width="300%" height="300%">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <!-- ── Icon mark ── -->
+  <!-- Rounded square bg -->
+  <rect x="2" y="5" width="100" height="100" rx="22" fill="#0d1829"/>
+
+  <!-- Circuit lines (behind dots) -->
+  <!-- top-right arm -->
+  <path d="M67 18 Q67 10 58 10" stroke="#22d3ee" stroke-width="1.8" stroke-linecap="round" fill="none" opacity="0.7"/>
+  <!-- left arm -->
+  <path d="M26 62 Q14 62 14 72" stroke="#22d3ee" stroke-width="1.8" stroke-linecap="round" fill="none" opacity="0.7"/>
+  <!-- bottom-left arm -->
+  <path d="M26 80 Q14 80 14 72" stroke="#22d3ee" stroke-width="1.8" stroke-linecap="round" fill="none" opacity="0.7"/>
+
+  <!-- Circuit dots with glow -->
+  <circle cx="58" cy="10" r="4.5" fill="#22d3ee" filter="url(#dotGlow)" opacity="0.95"/>
+  <circle cx="14" cy="72" r="4.5" fill="#22d3ee" filter="url(#dotGlow)" opacity="0.95"/>
+  <circle cx="67" cy="92" r="3.5" fill="#3b82f6" filter="url(#dotGlow)" opacity="0.8"/>
+
+  <!-- N letterform – ribbon-style rounded strokes -->
+  <!-- Left vertical bar -->
+  <path d="M24 22 C24 19 26 17 29 17 L35 17 C38 17 40 19 40 22 L40 88 C40 91 38 93 35 93 L29 93 C26 93 24 91 24 88 Z"
+        fill="url(#nGrad)"/>
+  <!-- Shine overlay on left bar -->
+  <path d="M24 22 C24 19 26 17 29 17 L35 17 C38 17 40 19 40 22 L40 52 L24 38 Z"
+        fill="url(#nShine)"/>
+
+  <!-- Diagonal bar -->
+  <path d="M40 22 L40 42 L64 68 L64 88 C64 91 66 93 69 93 L75 93 C78 93 80 91 80 88 L80 68 L56 42 L56 22 C56 19 54 17 51 17 L45 17 C42 17 40 19 40 22 Z"
+        fill="url(#nGrad)"/>
+
+  <!-- Right vertical bar -->
+  <path d="M64 22 C64 19 66 17 69 17 L75 17 C78 17 80 19 80 22 L80 88 C80 91 78 93 75 93 L69 93 C66 93 64 91 64 88 Z"
+        fill="url(#nGrad)"/>
+  <!-- Shine on right bar -->
+  <path d="M64 22 C64 19 66 17 69 17 L75 17 C78 17 80 19 80 22 L80 40 L64 28 Z"
+        fill="url(#nShine)"/>
+
+  <!-- ── Text ── -->
+  <!-- "Internite" white bold -->
+  <text x="118" y="68" font-family="'Inter','Segoe UI',Arial,sans-serif" font-size="46" font-weight="800"
+        fill="white" letter-spacing="-1">Internite</text>
+  <!-- "CRM" cyan -->
+  <text x="342" y="68" font-family="'Inter','Segoe UI',Arial,sans-serif" font-size="46" font-weight="800"
+        fill="url(#crmGrad)" letter-spacing="2">CRM</text>
+  <!-- Tagline -->
+  <text x="118" y="88" font-family="'Inter','Segoe UI',Arial,sans-serif" font-size="11" font-weight="600"
+        fill="#64748b" letter-spacing="4">CONNECT · AUTOMATE · GROW</text>
+</svg>

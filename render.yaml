@@ -1,0 +1,77 @@
+services:
+
+  # ── Backend (Spring Boot) ──────────────────────────────────────
+  - type: web
+    name: nexacrm-backend
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    plan: free
+    healthCheckPath: /actuator/health/render
+
+    envVars:
+      # ── MongoDB Atlas (set in Render dashboard) ────────────────
+      - key: MONGODB_URI
+        sync: false
+      - key: MONGODB_DB
+        value: nexacrm
+
+      # ── Security ───────────────────────────────────────────────
+      - key: JWT_SECRET
+        generateValue: true
+
+      # ── CORS (frontend origin + credentialed requests) ─
+      - key: CORS_ORIGINS
+        value: "https://nexacrmai.com,https://www.nexacrmai.com"
+      - key: CORS_ALLOW_CREDENTIALS
+        value: "true"
+
+      # ── Facebook / Meta (set manually in Render dashboard) ──────
+      - key: META_APP_ID
+        sync: false
+      - key: META_APP_SECRET
+        sync: false
+      - key: META_WEBHOOK_TOKEN
+        sync: false
+      - key: META_PAGE_ACCESS_TOKEN
+        sync: false
+      - key: META_PAGE_ID
+        sync: false
+
+      # ── Email SMTP (set manually in Render dashboard) ────────────
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASSWORD
+        sync: false
+
+      # ── WhatsApp (set manually in Render dashboard) ──────────────
+      - key: AIADRIKA_BASE_URL
+        sync: false
+      - key: AIADRIKA_INSTANCE_ID
+        sync: false
+      - key: AIADRIKA_ACCESS_TOKEN
+        sync: false
+
+  # ── Frontend (React / Vite static site) ───────────────────────
+  - type: web
+    name: nexacrm-frontend
+    runtime: static
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+
+    envVars:
+      - key: VITE_API_BASE_URL
+        value: /api
+      - key: VITE_API_TIMEOUT_MS
+        value: "45000"
+      - key: VITE_LOGIN_TIMEOUT_MS
+        value: "60000"
+
+    routes:
+      # Serve index.html for all paths so React Router works
+      - type: rewrite
+        source: /*
+        destination: /index.html

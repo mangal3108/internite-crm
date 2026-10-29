@@ -1,0 +1,52 @@
+# Environment / secrets
+.env
+.env.local
+.env.production
+backend/.env
+
+# Java / Maven
+backend/target/
+backend/.mvn/
+*.class
+*.jar
+*.war
+
+# Node / Vite
+frontend/node_modules/
+frontend/dist/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+*.DS_Store
+
+# Logs
+*.log
+logs/
+
+# Python / LiveKit worker
+livekit-agent/.venv/
+livekit-agent/__pycache__/
+*.pyc
+node_modules/
+
+# Separate upstream project (has its own repo) and its WhatsApp session data
+openwa/
+
+# Local tooling / scratch output
+.claude/
+.playwright-mcp/
+.serena/
+output/
+
+# Browser-automation debug dumps and screenshots
+cloudflare-*.json
+hostinger-*.json
+hostinger-*.txt
+hostinger-*.png
+chrome-*.json
+analytics-fixed-live.png
+
+# Unused Gradle template workflow (project builds with Maven)
+.github/workflows/gradle-publish.yml
