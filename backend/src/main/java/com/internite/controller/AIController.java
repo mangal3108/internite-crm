@@ -1,9 +1,11 @@
 package com.internite.controller;
 
 import com.internite.service.AIService;
+import com.internite.service.SarathiAgentService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -14,18 +16,26 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/ai")
 @RequiredArgsConstructor
+@Slf4j
 @Tag(name = "AI Engine", description = "AI-powered CRM features via Mistral")
 public class AIController {
 
     private final AIService aiService;
+    private final SarathiAgentService sarathiAgentService;
 
     @PostMapping("/chat")
     @PreAuthorize("hasAuthority('ai.use')")
-    @Operation(summary = "Chat with Internite AI assistant")
-    public ResponseEntity<Map<String, String>> chat(
+    @Operation(summary = "Chat with Sarathi, the read-only CRM agent that looks up your data to answer")
+    public ResponseEntity<Map<String, Object>> chat(
             @RequestBody Map<String, List<Map<String, String>>> body) {
-        String response = aiService.chat(body.get("messages"));
-        return ResponseEntity.ok(Map.of("response", response));
+        List<Map<String, String>> messages = body.get("messages");
+        try {
+            SarathiAgentService.Reply reply = sarathiAgentService.chat(messages);
+            return ResponseEntity.ok(Map.of("response", reply.response(), "toolsUsed", reply.toolsUsed()));
+        } catch (Exception ex) {
+            log.warn("Sarathi agent failed, using plain chat: {}", ex.getMessage());
+            return ResponseEntity.ok(Map.of("response", aiService.chat(messages), "toolsUsed", List.of()));
+        }
     }
 
     @PostMapping("/score/{leadId}")

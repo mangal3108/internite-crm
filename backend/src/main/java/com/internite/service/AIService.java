@@ -806,6 +806,21 @@ public class AIService {
     // ── Private helpers ───────────────────────────────────────────
 
     private String callOpenAIText(List<Map<String, String>> messages, int maxTokens, double temperature) {
+        Map<String, ?> message = chatCompletion(new ArrayList<>(messages), null, maxTokens, temperature);
+        return extractTextContent(message.get("content"));
+    }
+
+    /** Text of an assistant message from {@link #chatCompletion}. */
+    public String messageText(Map<String, ?> message) {
+        return extractTextContent(message == null ? null : message.get("content"));
+    }
+
+    /**
+     * One Chat Completions round trip with the tenant's AI provider. When {@code tools} is non-empty they are
+     * offered to the model, and the returned assistant message may carry {@code tool_calls} instead of text.
+     */
+    public Map<String, ?> chatCompletion(List<? extends Map<String, ?>> messages, List<Map<String, Object>> tools,
+                                         int maxTokens, double temperature) {
         Map<String, String> tenantConfig = resolveTenantOpenAIConfig();
         String provider = AiProviders.providerId(tenantConfig.get("provider"));
         String apiKey = resolveApiKey(tenantConfig);
@@ -820,12 +835,15 @@ public class AIService {
             headers.setBearerAuth(apiKey);
         }
 
-        Map<String, Object> payload = Map.of(
-            "model", configuredModel,
-            "messages", messages,
-            "max_tokens", maxTokens,
-            "temperature", temperature
-        );
+        Map<String, Object> payload = new java.util.LinkedHashMap<>();
+        payload.put("model", configuredModel);
+        payload.put("messages", messages);
+        payload.put("max_tokens", maxTokens);
+        payload.put("temperature", temperature);
+        if (tools != null && !tools.isEmpty()) {
+            payload.put("tools", tools);
+            payload.put("tool_choice", "auto");
+        }
 
         HttpEntity<Map<String, Object>> entity = new HttpEntity<>(payload, headers);
         @SuppressWarnings("unchecked")
@@ -854,8 +872,9 @@ public class AIService {
             throw new IllegalStateException("AI provider response missing message");
         }
 
-        Object content = message.get("content");
-        return extractTextContent(content);
+        @SuppressWarnings("unchecked")
+        Map<String, ?> assistantMessage = (Map<String, ?>) message;
+        return assistantMessage;
     }
 
     private Map<String, Object> callOpenAIJson(String systemPrompt, String userPrompt, int maxTokens, double temperature) {

@@ -5,6 +5,8 @@ import {
   ArrowUp, ArrowUpRight, Flame, Thermometer, Snowflake, Activity, PenLine,
   Compass, Radar, MessagesSquare, RefreshCw, Copy, CheckCircle2, AlertCircle
 } from 'lucide-react'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import SarathiMark, { ASSISTANT_NAME, ASSISTANT_TAGLINE } from '../ui/SarathiMark'
 import { aiAPI, customersAPI, leadsAPI, dealsAPI } from '../../services/api'
 import toast from 'react-hot-toast'
@@ -22,6 +24,42 @@ const TABS = [
   { id: 'predict', label: 'Deal Compass', hint: 'Win odds and risks per deal', icon: Compass },
   { id: 'insights', label: 'Signals', hint: 'Patterns hiding in your CRM', icon: Radar },
 ]
+
+// What each read-only Sarathi tool looked at, for the "Looked at" line under a reply.
+const TOOL_LABELS = {
+  crm_overview: 'Overview',
+  search_leads: 'Leads',
+  get_lead: 'Lead details',
+  list_tasks: 'Tasks',
+  list_deals: 'Deals',
+  list_customers: 'Customers',
+  list_invoices: 'Invoices',
+  team_performance: 'Team performance',
+  lead_sources: 'Lead sources',
+  recent_calls: 'Calls',
+  list_team_members: 'Team',
+}
+
+// Markdown from the agent: tables, lists, bold. react-markdown never renders raw HTML.
+const MARKDOWN_COMPONENTS = {
+  p: (props) => <p className="my-1.5" {...props} />,
+  ul: (props) => <ul className="my-1.5 list-disc space-y-0.5 pl-5" {...props} />,
+  ol: (props) => <ol className="my-1.5 list-decimal space-y-0.5 pl-5" {...props} />,
+  strong: (props) => <strong className="font-semibold text-slate-900 dark:text-slate-100" {...props} />,
+  h1: (props) => <h3 className="mb-1 mt-3 text-sm font-bold text-slate-900 dark:text-slate-100" {...props} />,
+  h2: (props) => <h3 className="mb-1 mt-3 text-sm font-bold text-slate-900 dark:text-slate-100" {...props} />,
+  h3: (props) => <h3 className="mb-1 mt-3 text-sm font-semibold text-slate-900 dark:text-slate-100" {...props} />,
+  code: (props) => <code className="rounded bg-slate-100 px-1 py-0.5 text-[12px] dark:bg-slate-800" {...props} />,
+  table: (props) => (
+    <div className="my-2 overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700">
+      <table className="w-full border-collapse text-[13px]" {...props} />
+    </div>
+  ),
+  thead: (props) => <thead className="bg-slate-50 dark:bg-slate-800/70" {...props} />,
+  th: (props) => <th className="whitespace-nowrap border-b border-slate-200 px-3 py-1.5 text-left font-semibold text-slate-700 dark:border-slate-700 dark:text-slate-200" {...props} />,
+  td: (props) => <td className="border-b border-slate-100 px-3 py-1.5 align-top dark:border-slate-800" {...props} />,
+  a: ({ href, ...props }) => <a href={href} target="_blank" rel="noreferrer" className="text-brand-600 underline" {...props} />,
+}
 
 function ChatTurn({ message }) {
   const isUser = message.role === 'user'
@@ -53,9 +91,14 @@ function ChatTurn({ message }) {
       </div>
       <div className="border-l-2 border-accent-400 pl-4 text-sm leading-relaxed text-slate-700 dark:text-slate-300">
         {message.loading
-          ? <span className="inline-flex items-center gap-2 py-0.5 text-slate-400"><span className="h-1.5 w-1.5 animate-pulse rounded-full bg-slate-400" />Reading your pipeline…</span>
-          : <div className="whitespace-pre-wrap">{message.content}</div>}
+          ? <span className="inline-flex items-center gap-2 py-0.5 text-slate-400"><span className="h-1.5 w-1.5 animate-pulse rounded-full bg-slate-400" />Looking through your CRM…</span>
+          : <ReactMarkdown remarkPlugins={[remarkGfm]} components={MARKDOWN_COMPONENTS}>{message.content}</ReactMarkdown>}
       </div>
+      {message.toolsUsed?.length > 0 && (
+        <p className="mt-1.5 pl-4 text-[11px] text-slate-400">
+          Looked at: {message.toolsUsed.map((t) => TOOL_LABELS[t] || t).join(' · ')}
+        </p>
+      )}
     </motion.div>
   )
 }
@@ -68,10 +111,10 @@ function AskSarathi() {
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages])
 
   const QUICK = [
-    'Which leads should I prioritize today?',
-    'Write a follow-up email for my hottest lead',
-    "What's blocking my pipeline?",
-    'Give me 3 tips to close more deals this week',
+    'Summarise my CRM this month',
+    'Which hot leads should I call today?',
+    'What follow-ups are overdue?',
+    'How is each team member performing this month?',
   ]
 
   const send = async (text) => {
@@ -84,7 +127,8 @@ function AskSarathi() {
       const history = messages.filter((m) => !m.loading).map((m) => ({ role: m.role, content: m.content }))
       const res = await aiAPI.chat([...history, { role: 'user', content: msg }])
       const reply = res?.response || 'No response.'
-      setMessages((p) => [...p.slice(0, -1), { role: 'assistant', content: reply }])
+      const toolsUsed = Array.isArray(res?.toolsUsed) ? res.toolsUsed : []
+      setMessages((p) => [...p.slice(0, -1), { role: 'assistant', content: reply, toolsUsed }])
     } catch (e) {
       setMessages((p) => [...p.slice(0, -1), { role: 'assistant', content: `Error: ${e.message}` }])
       toast.error(e.message)
