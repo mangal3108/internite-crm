@@ -290,10 +290,10 @@ const CAT_COLORS = {
 }
 
 function getErrorMessage(err, fallback) {
-  if (typeof err === 'string' && err.trim()) return err
-  if (err?.message && String(err.message).trim()) return String(err.message)
-  if (err?.error && String(err.error).trim()) return String(err.error)
-  return fallback
+  const candidates = [typeof err === 'string' ? err : '', err?.message, err?.error]
+  // An HTML error page (proxy or firewall) is not a message; show the fallback instead of its markup.
+  const text = candidates.map(c => String(c || '').trim()).find(c => c && !c.startsWith('<'))
+  return text || fallback
 }
 
 /* ── Setup Modal ── */

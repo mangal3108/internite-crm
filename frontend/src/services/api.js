@@ -25,11 +25,18 @@ const BASE_URL = resolveApiBaseUrl()
 const API_TIMEOUT_MS = Number(import.meta.env.VITE_API_TIMEOUT_MS || 120000)
 const LOGIN_TIMEOUT_MS = Number(import.meta.env.VITE_LOGIN_TIMEOUT_MS || 60000)
 
+// Render's edge firewall rejects request bodies containing "http://" or "https://" (403 "Blocked"),
+// which broke saving any setting that holds a URL. Writing "/" as "\/" is the same JSON value,
+// so the backend reads it unchanged while the firewall no longer sees a URL.
+const escapeJsonSlashes = (data) =>
+  typeof data === 'string' && /^\s*[[{]/.test(data) ? data.replace(/\//g, '\\/') : data
+
 const api = axios.create({
   baseURL: BASE_URL,
   headers: { 'Content-Type': 'application/json' },
   timeout: API_TIMEOUT_MS,
   withCredentials: true,
+  transformRequest: [...axios.defaults.transformRequest, escapeJsonSlashes],
 })
 
 const authClient = axios.create({
