@@ -79,6 +79,11 @@ services:
         sync: false
       - key: AIADRIKA_ACCESS_TOKEN
         sync: false
+      # OpenWA gateway: must be a public URL (e.g. a tunnel or VPS), not localhost
+      - key: OPENWA_API_URL
+        sync: false
+      - key: OPENWA_API_KEY
+        sync: false
 
   # ── Frontend (React / Vite static site) ───────────────────────
   - type: web

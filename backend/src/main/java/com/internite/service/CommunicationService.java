@@ -118,7 +118,7 @@ public class CommunicationService {
     @Value("${internite.whatsapp.openwa.api-url:http://localhost:2785/api}")
     private String defaultOpenwaApiUrl;
 
-    @Value("${internite.whatsapp.openwa.api-key:owa_k1_3dd7f106e224ad4e438075dee300c7f664c5d2106779d2058eb3d4792d6037eb}")
+    @Value("${internite.whatsapp.openwa.api-key:}")
     private String defaultOpenwaApiKey;
 
     @Value("${meta.page-access-token:}")

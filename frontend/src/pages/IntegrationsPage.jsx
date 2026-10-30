@@ -85,7 +85,7 @@ const INTEGRATIONS = [
     defaultValues: {
       provider: 'openwa',
       apiUrl: 'http://localhost:2785/api',
-      apiKey: 'owa_k1_3dd7f106e224ad4e438075dee300c7f664c5d2106779d2058eb3d4792d6037eb',
+      apiKey: '',
       sessionId: 'internite',
       senderNumber: '919876543210',
     },
