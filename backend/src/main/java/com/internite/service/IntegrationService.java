@@ -15,6 +15,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpStatusCodeException;
+import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -39,7 +40,8 @@ public class IntegrationService {
         Map.entry("twilio", List.of("accountSid", "authToken")),
         Map.entry("gmail", List.of("clientId", "clientSecret", "refreshToken")),
         Map.entry("google_calendar", List.of("clientId", "clientSecret")),
-        Map.entry("openai", List.of("apiKey")),
+        // Which fields are needed depends on the AI provider; see AiProviders.validationError.
+        Map.entry("openai", List.of()),
         Map.entry("mongodb", List.of("uri")),
         Map.entry("linkedin", List.of("clientId", "clientSecret")),
         Map.entry("google_sheets_leads", List.of("spreadsheetId", "sheetName"))
@@ -93,7 +95,9 @@ public class IntegrationService {
         IntegrationConfig existing = findExistingConfig(normalizedId);
         Map<String, String> existingValues = existing != null ? safeCopy(existing.getValues()) : Map.of();
         Map<String, String> mergedValues = mergeValues(existingValues, values);
+        dropKeyOnAiProviderChange(normalizedId, existingValues, values, mergedValues);
         validateRequired(mergedValues, required);
+        validateAiProvider(normalizedId, mergedValues);
 
         IntegrationConfig config = existing != null ? existing : new IntegrationConfig();
         config.setIntegrationId(normalizedId);
@@ -112,8 +116,10 @@ public class IntegrationService {
 
         Map<String, String> persisted = getConfig(normalizedId);
         Map<String, String> testValues = mergeValues(persisted, values);
+        dropKeyOnAiProviderChange(normalizedId, persisted, values, testValues);
 
         validateRequired(testValues, required);
+        validateAiProvider(normalizedId, testValues);
 
         if ("google_sheets_leads".equals(normalizedId)) {
             return leadService().testPublicGoogleSheetAccess(testValues);
@@ -385,12 +391,16 @@ public class IntegrationService {
     }
 
     private Map<String, Object> testOpenAIConnection(Map<String, String> values) {
+        String provider = AiProviders.providerId(values.get("provider"));
+        String label = AiProviders.preset(provider).label();
         String apiKey = trim(values.get("apiKey"));
-        String model = firstNonBlank(values.get("model"), "gpt-4o-mini");
+        String model = firstNonBlank(values.get("model"), AiProviders.preset(provider).defaultModel());
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.setBearerAuth(apiKey);
+        if (!apiKey.isBlank()) {
+            headers.setBearerAuth(apiKey);
+        }
 
         Map<String, Object> payload = Map.of(
             "model", model,
@@ -401,27 +411,31 @@ public class IntegrationService {
 
         try {
             ResponseEntity<Map> response = restTemplate.exchange(
-                "https://api.openai.com/v1/chat/completions",
+                AiProviders.chatCompletionsUrl(provider, values.get("baseUrl")),
                 HttpMethod.POST,
                 new HttpEntity<>(payload, headers),
                 Map.class
             );
             Map<?, ?> body = response.getBody() == null ? Map.of() : response.getBody();
             if (!(body.get("choices") instanceof List<?> choices) || choices.isEmpty()) {
-                throw new IllegalStateException("OpenAI returned no completion choices.");
+                throw new IllegalStateException(label + " returned no completion choices.");
             }
             return Map.of(
                 "ok", true,
-                "message", "OpenAI connection test passed.",
+                "message", label + " connection test passed (" + model + ").",
                 "integration", "openai",
+                "provider", provider,
                 "model", model
             );
         } catch (HttpStatusCodeException ex) {
             String providerMessage = ex.getResponseBodyAsString();
             if (ex.getStatusCode().value() == 429) {
-                throw new IllegalStateException("OpenAI rejected the test because the key is rate limited or has no available quota. Try again later or check the OpenAI dashboard.");
+                throw new IllegalStateException(label + " rejected the test because the key is rate limited or has no available quota. Try again later or check the " + label + " dashboard.");
             }
-            throw new IllegalStateException("OpenAI connection test failed (HTTP " + ex.getStatusCode().value() + "): " + providerMessage);
+            throw new IllegalStateException(label + " connection test failed (HTTP " + ex.getStatusCode().value() + "): " + providerMessage);
+        } catch (ResourceAccessException ex) {
+            throw new IllegalStateException("Could not reach " + label + " at " + AiProviders.chatCompletionsUrl(provider, values.get("baseUrl"))
+                + ". Check the API Base URL" + ("ollama".equals(provider) ? " (a server on localhost is not reachable from the deployed backend)." : "."));
         }
     }
 
@@ -471,6 +485,31 @@ public class IntegrationService {
             baseUrl = baseUrl + "/api/v2";
         }
         return baseUrl;
+    }
+
+    // A saved key belongs to the saved provider: when the provider changes and no new key was typed,
+    // forget the old key instead of sending it to a different company.
+    private void dropKeyOnAiProviderChange(String integrationId, Map<String, String> existing,
+                                           Map<String, String> incoming, Map<String, String> merged) {
+        if (!"openai".equals(integrationId) || incoming == null || !incoming.containsKey("provider")) {
+            return;
+        }
+        String before = AiProviders.providerId(existing == null ? null : existing.get("provider"));
+        String after = AiProviders.providerId(incoming.get("provider"));
+        String typedKey = trim(incoming.get("apiKey"));
+        if (!before.equals(after) && (typedKey.isBlank() || isMaskedValue(typedKey))) {
+            merged.remove("apiKey");
+        }
+    }
+
+    private void validateAiProvider(String integrationId, Map<String, String> values) {
+        if (!"openai".equals(integrationId)) {
+            return;
+        }
+        String problem = AiProviders.validationError(values);
+        if (problem != null) {
+            throw new IllegalStateException(problem);
+        }
     }
 
     private void validateRequired(Map<String, String> values, List<String> requiredFields) {

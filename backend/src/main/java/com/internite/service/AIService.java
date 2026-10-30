@@ -807,15 +807,18 @@ public class AIService {
 
     private String callOpenAIText(List<Map<String, String>> messages, int maxTokens, double temperature) {
         Map<String, String> tenantConfig = resolveTenantOpenAIConfig();
+        String provider = AiProviders.providerId(tenantConfig.get("provider"));
         String apiKey = resolveApiKey(tenantConfig);
-        String configuredModel = resolveModel(tenantConfig);
-        if (!hasRealApiKey(apiKey)) {
-            throw new IllegalStateException("OPENAI_API_KEY is not configured");
+        String configuredModel = resolveModel(tenantConfig, provider);
+        if (!hasRealApiKey(apiKey) && !AiProviders.preset(provider).keyOptional()) {
+            throw new IllegalStateException("AI provider API key is not configured");
         }
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.setBearerAuth(apiKey);
+        if (hasRealApiKey(apiKey)) {
+            headers.setBearerAuth(apiKey);
+        }
 
         Map<String, Object> payload = Map.of(
             "model", configuredModel,
@@ -827,28 +830,28 @@ public class AIService {
         HttpEntity<Map<String, Object>> entity = new HttpEntity<>(payload, headers);
         @SuppressWarnings("unchecked")
         Map<String, Object> response = restTemplate.postForObject(
-            "https://api.openai.com/v1/chat/completions",
+            AiProviders.chatCompletionsUrl(provider, tenantConfig.get("baseUrl")),
             entity,
             Map.class
         );
 
         if (response == null) {
-            throw new IllegalStateException("Empty OpenAI response");
+            throw new IllegalStateException("Empty AI provider response");
         }
 
         Object choicesObj = response.get("choices");
         if (!(choicesObj instanceof List<?> choices) || choices.isEmpty()) {
-            throw new IllegalStateException("OpenAI response missing choices");
+            throw new IllegalStateException("AI provider response missing choices");
         }
 
         Object firstObj = choices.get(0);
         if (!(firstObj instanceof Map<?, ?> firstChoice)) {
-            throw new IllegalStateException("OpenAI response choice format invalid");
+            throw new IllegalStateException("AI provider response choice format invalid");
         }
 
         Object messageObj = firstChoice.get("message");
         if (!(messageObj instanceof Map<?, ?> message)) {
-            throw new IllegalStateException("OpenAI response missing message");
+            throw new IllegalStateException("AI provider response missing message");
         }
 
         Object content = message.get("content");
@@ -1026,14 +1029,23 @@ public class AIService {
         return config == null ? Map.of() : config;
     }
 
+    // The OPENAI_API_KEY env fallback is only for OpenAI; never send it to another provider.
     private String resolveApiKey(Map<String, String> tenantConfig) {
         String tenantKey = tenantConfig == null ? "" : tenantConfig.get("apiKey");
-        return tenantKey != null && !tenantKey.isBlank() ? tenantKey.trim() : trim(openaiApiKey);
+        if (tenantKey != null && !tenantKey.isBlank()) {
+            return tenantKey.trim();
+        }
+        String provider = AiProviders.providerId(tenantConfig == null ? null : tenantConfig.get("provider"));
+        return "openai".equals(provider) ? trim(openaiApiKey) : "";
     }
 
-    private String resolveModel(Map<String, String> tenantConfig) {
+    // Without a saved model: the OPENAI_MODEL env value for OpenAI, else the provider's default.
+    private String resolveModel(Map<String, String> tenantConfig, String provider) {
         String tenantModel = tenantConfig == null ? "" : tenantConfig.get("model");
-        return tenantModel != null && !tenantModel.isBlank() ? tenantModel.trim() : trim(model);
+        if (tenantModel != null && !tenantModel.isBlank()) {
+            return tenantModel.trim();
+        }
+        return "openai".equals(provider) ? trim(model) : AiProviders.preset(provider).defaultModel();
     }
 
     private boolean hasRealApiKey(String apiKey) {

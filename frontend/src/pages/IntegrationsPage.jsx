@@ -8,6 +8,24 @@ import { useIntegrationsStore } from '../store/integrationsStore'
 import ScreenModalPortal from '../components/ui/ScreenModalPortal'
 import InfoHint from '../components/ui/InfoHint'
 
+// AI providers reachable through the OpenAI-compatible Chat Completions API (mirrors backend AiProviders).
+// Picking one fills in its base URL and a suggested model; both stay editable.
+const AI_PROVIDERS = [
+  { id: 'openai',     label: 'OpenAI',                     baseUrl: 'https://api.openai.com/v1',                                model: 'gpt-4o-mini',                             keyPlaceholder: 'sk-...',     keyHint: 'platform.openai.com/api-keys' },
+  { id: 'anthropic',  label: 'Anthropic Claude',           baseUrl: 'https://api.anthropic.com/v1',                             model: 'claude-haiku-5-5',                        keyPlaceholder: 'sk-ant-...', keyHint: 'console.anthropic.com → API Keys' },
+  { id: 'gemini',     label: 'Google Gemini',              baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',  model: 'gemini-2.5-flash',                        keyPlaceholder: 'AIza...',    keyHint: 'aistudio.google.com/apikey' },
+  { id: 'mistral',    label: 'Mistral AI',                 baseUrl: 'https://api.mistral.ai/v1',                                model: 'mistral-small-latest',                    keyPlaceholder: 'your Mistral key', keyHint: 'console.mistral.ai → API Keys' },
+  { id: 'xai',        label: 'xAI Grok',                   baseUrl: 'https://api.x.ai/v1',                                      model: 'grok-3-mini',                             keyPlaceholder: 'xai-...',    keyHint: 'console.x.ai → API Keys' },
+  { id: 'groq',       label: 'Groq',                       baseUrl: 'https://api.groq.com/openai/v1',                           model: 'llama-3.3-70b-versatile',                 keyPlaceholder: 'gsk_...',    keyHint: 'console.groq.com/keys' },
+  { id: 'deepseek',   label: 'DeepSeek',                   baseUrl: 'https://api.deepseek.com/v1',                              model: 'deepseek-chat',                           keyPlaceholder: 'sk-...',     keyHint: 'platform.deepseek.com/api_keys' },
+  { id: 'openrouter', label: 'OpenRouter (many models)',   baseUrl: 'https://openrouter.ai/api/v1',                             model: 'openai/gpt-4o-mini',                      keyPlaceholder: 'sk-or-...',  keyHint: 'openrouter.ai/keys — model names look like provider/model' },
+  { id: 'together',   label: 'Together AI',                baseUrl: 'https://api.together.xyz/v1',                              model: 'meta-llama/Llama-3.3-70B-Instruct-Turbo', keyPlaceholder: 'your Together key', keyHint: 'api.together.ai/settings/api-keys' },
+  { id: 'perplexity', label: 'Perplexity',                 baseUrl: 'https://api.perplexity.ai',                                model: 'sonar',                                   keyPlaceholder: 'pplx-...',   keyHint: 'perplexity.ai/settings/api' },
+  { id: 'ollama',     label: 'Ollama (self-hosted)',       baseUrl: 'http://localhost:11434/v1',                                model: 'llama3.1',                                keyPlaceholder: 'not needed', keyHint: 'No key needed. The deployed backend must be able to reach this URL.', keyOptional: true },
+  { id: 'custom',     label: 'Custom (OpenAI-compatible)', baseUrl: '',                                                         model: '',                                        keyPlaceholder: 'if required', keyHint: 'Any service with an OpenAI-compatible /chat/completions endpoint.', keyOptional: true },
+]
+const aiProvider = (id) => AI_PROVIDERS.find(p => p.id === id) || AI_PROVIDERS[0]
+
 const INTEGRATIONS = [
   {
     id: 'facebook', name: 'Facebook', category: 'Social Media',
@@ -224,16 +242,19 @@ const INTEGRATIONS = [
     Icon: Sheet,
   },
   {
-    id: 'openai', name: 'OpenAI', category: 'AI',
-    tagline: 'Power all AI features with OpenAI GPT',
-    description: 'Connect your OpenAI API key to enable AI lead scoring, email drafting, deal prediction, smart replies, and the Sarathi assistant.',
+    id: 'openai', name: 'AI Provider', category: 'AI',
+    tagline: 'OpenAI, Claude, Gemini, Mistral, Grok and more',
+    description: 'Connect one AI provider to enable AI lead scoring, email drafting, deal prediction, smart replies, and the Sarathi assistant. Pick the provider, paste its API key, and choose a model.',
     features: ['Lead scoring', 'Email generation', 'Deal prediction', 'AI chatbot', 'Smart replies'],
     color: '#10A37F', bg: '#F0FDF9',
     authType: 'apikey',
     docsUrl: 'https://platform.openai.com/docs/api-reference/chat',
+    defaultValues: { provider: 'openai' },
     fields: [
-      { key: 'apiKey', label: 'OpenAI API Key', placeholder: 'sk-...', secret: true, hint: 'Create one at platform.openai.com/api-keys' },
-      { key: 'model',  label: 'Model',       placeholder: 'gpt-4o-mini', hint: 'Recommended: gpt-4o-mini' },
+      { key: 'provider', label: 'Provider', type: 'select', options: AI_PROVIDERS.map(p => ({ value: p.id, label: p.label })) },
+      { key: 'apiKey',   label: 'API Key', placeholder: 'sk-...', secret: true, hint: 'platform.openai.com/api-keys' },
+      { key: 'model',    label: 'Model', placeholder: 'gpt-4o-mini', hint: 'Suggested model is filled in; any model name the provider offers works.' },
+      { key: 'baseUrl',  label: 'API Base URL (optional)', placeholder: 'https://api.openai.com/v1', hint: 'Filled from the provider. Change only for a proxy or self-hosted endpoint.' },
     ],
     Icon: Plug,
   },
@@ -293,7 +314,19 @@ function SetupModal({ integration, onClose }) {
   const [tested, setTested] = useState(false)
   const isConnected = !!connected[integration.id]
 
-  const update = (key, val) => setValues(p => ({ ...p, [key]: val }))
+  const update = (key, val) => {
+    if (integration.id === 'openai' && key === 'provider') {
+      // New provider: take its URL and suggested model; the old key belongs to the old provider.
+      const preset = aiProvider(val)
+      setValues(p => ({ ...p, provider: val, baseUrl: preset.baseUrl, model: preset.model, apiKey: '' }))
+      return
+    }
+    setValues(p => ({ ...p, [key]: val }))
+  }
+  const currentAiProvider = integration.id === 'openai' ? aiProvider(values.provider) : null
+  const fieldView = (f) => (currentAiProvider && f.key === 'apiKey'
+    ? { ...f, label: `${currentAiProvider.label} API Key${currentAiProvider.keyOptional ? ' (optional)' : ''}`, placeholder: currentAiProvider.keyPlaceholder, hint: currentAiProvider.keyHint }
+    : f)
   const copy = (val) => { navigator.clipboard?.writeText(val); toast.success('Copied!') }
   const providerMode = String(values.provider || '').trim().toLowerCase()
 
@@ -307,6 +340,13 @@ function SetupModal({ integration, onClose }) {
   const getRequiredFields = () => {
     if (integration.id === 'whatsapp') {
       return integration.fields.filter(f => f.key === 'apiUrl')
+    }
+
+    if (integration.id === 'openai') {
+      const keys = ['provider', 'model']
+      if (!currentAiProvider.keyOptional) keys.push('apiKey')
+      if (currentAiProvider.id === 'custom') keys.push('baseUrl')
+      return integration.fields.filter(f => keys.includes(f.key)).map(fieldView)
     }
 
     if (integration.id !== 'voice_call_agent') {
@@ -439,9 +479,18 @@ function SetupModal({ integration, onClose }) {
 
           {/* Fields */}
           <div className="px-5 py-4 space-y-3">
-            {getVisibleFields().map(f => (
+            {getVisibleFields().map(fieldView).map(f => (
               <div key={f.key}>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">{f.label}</label>
+                {f.type === 'select' ? (
+                  <select
+                    value={values[f.key] || f.options[0]?.value || ''}
+                    onChange={e => update(f.key, e.target.value)}
+                    className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-sm px-3 py-2.5 outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500 transition"
+                  >
+                    {f.options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  </select>
+                ) : (
                 <div className="relative">
                   <input
                     type={f.secret && !revealed[f.key] ? 'password' : 'text'}
@@ -464,6 +513,7 @@ function SetupModal({ integration, onClose }) {
                     )}
                   </div>
                 </div>
+                )}
                 {f.hint && <p className="text-[10px] text-slate-400 mt-0.5">{f.hint}</p>}
               </div>
             ))}
