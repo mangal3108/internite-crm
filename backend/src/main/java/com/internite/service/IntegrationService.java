@@ -390,6 +390,123 @@ public class IntegrationService {
         }
     }
 
+    private static final java.util.regex.Pattern NON_CHAT_MODEL = java.util.regex.Pattern.compile(
+        "(embed|tts|whisper|dall-e|moderation|transcribe|image|audio|realtime|rerank|speech|vision-preview)",
+        java.util.regex.Pattern.CASE_INSENSITIVE);
+
+    // Perplexity has no model list endpoint.
+    private static final List<String> PERPLEXITY_MODELS = List.of(
+        "sonar", "sonar-pro", "sonar-reasoning", "sonar-reasoning-pro", "sonar-deep-research");
+
+    /**
+     * Chat models the selected AI provider offers, each tagged free / free_tier / self_hosted / paid / unknown.
+     * Only OpenRouter reports prices per model; other providers are tagged by their plan.
+     */
+    public Map<String, Object> listAiModels(Map<String, String> values) {
+        Map<String, String> persisted = getConfig("openai");
+        Map<String, String> merged = mergeValues(persisted, values);
+        dropKeyOnAiProviderChange("openai", persisted, values, merged);
+
+        String provider = AiProviders.providerId(merged.get("provider"));
+        AiProviders.Preset preset = AiProviders.preset(provider);
+        String apiKey = trim(merged.get("apiKey"));
+        if (apiKey.isBlank() && !preset.keyOptional()) {
+            throw new IllegalStateException("Enter the " + preset.label() + " API key to load its models.");
+        }
+
+        List<Map<String, Object>> models = new ArrayList<>();
+        if ("perplexity".equals(provider)) {
+            PERPLEXITY_MODELS.forEach(id -> models.add(aiModel(id, id, preset.pricing(), null)));
+        } else {
+            HttpHeaders headers = new HttpHeaders();
+            if (!apiKey.isBlank()) {
+                headers.setBearerAuth(apiKey);
+            }
+            if ("anthropic".equals(provider)) {
+                headers.set("x-api-key", apiKey);
+                headers.set("anthropic-version", "2023-06-01");
+            }
+            String url = AiProviders.modelsUrl(provider, merged.get("baseUrl"));
+            Map<?, ?> body;
+            try {
+                ResponseEntity<Map> response = restTemplate.exchange(url, HttpMethod.GET, new HttpEntity<>(headers), Map.class);
+                body = response.getBody() == null ? Map.of() : response.getBody();
+            } catch (HttpStatusCodeException ex) {
+                int status = ex.getStatusCode().value();
+                throw new IllegalStateException(status == 401 || status == 403
+                    ? preset.label() + " rejected the API key, so the model list could not be loaded."
+                    : preset.label() + " model list failed (HTTP " + status + "). You can still type a model name.");
+            } catch (ResourceAccessException ex) {
+                throw new IllegalStateException("Could not reach " + preset.label() + " at " + url + ".");
+            }
+            if (body.get("data") instanceof List<?> data) {
+                for (Object item : data) {
+                    if (!(item instanceof Map<?, ?> m) || m.get("id") == null) {
+                        continue;
+                    }
+                    String id = String.valueOf(m.get("id")).replaceFirst("^models/", "");
+                    if (NON_CHAT_MODEL.matcher(id).find()) {
+                        continue;
+                    }
+                    // OpenRouter lists output modalities; keep text-only models (drops music/image generators).
+                    if (m.get("architecture") instanceof Map<?, ?> arch
+                        && arch.get("output_modalities") instanceof List<?> outputs
+                        && !List.of("text").equals(outputs)) {
+                        continue;
+                    }
+                    String name = firstNonBlank(asText(m.get("display_name")), asText(m.get("name")), id);
+                    String tier = preset.pricing();
+                    String price = null;
+                    if ("per_model".equals(tier)) {
+                        Map<?, ?> pricing = m.get("pricing") instanceof Map<?, ?> p ? p : Map.of();
+                        double prompt = parsePrice(pricing.get("prompt"));
+                        double completion = parsePrice(pricing.get("completion"));
+                        boolean free = id.endsWith(":free") || (prompt == 0 && completion == 0 && pricing.containsKey("prompt"));
+                        tier = free ? "free" : "paid";
+                        if (!free && prompt > 0) {
+                            price = String.format(Locale.ROOT, "$%.2f / 1M input", prompt * 1_000_000);
+                        }
+                    }
+                    models.add(aiModel(id, name, tier, price));
+                }
+            }
+        }
+
+        List<String> freeFirst = List.of("free", "free_tier", "self_hosted", "unknown", "paid");
+        models.sort(java.util.Comparator
+            .comparing((Map<String, Object> m) -> freeFirst.indexOf(String.valueOf(m.get("tier"))))
+            .thenComparing(m -> String.valueOf(m.get("id")), String.CASE_INSENSITIVE_ORDER));
+
+        return Map.of(
+            "provider", provider,
+            "pricing", preset.pricing(),
+            "models", models
+        );
+    }
+
+    private Map<String, Object> aiModel(String id, String name, String tier, String price) {
+        Map<String, Object> model = new LinkedHashMap<>();
+        model.put("id", id);
+        model.put("name", name);
+        model.put("tier", tier);
+        if (price != null) {
+            model.put("price", price);
+        }
+        return model;
+    }
+
+    private static String asText(Object value) {
+        return value == null ? "" : String.valueOf(value);
+    }
+
+    private static double parsePrice(Object value) {
+        try {
+            return value == null ? -1 : Double.parseDouble(String.valueOf(value));
+        } catch (NumberFormatException ex) {
+            return -1;
+        }
+    }
+
     private Map<String, Object> testOpenAIConnection(Map<String, String> values) {
         String provider = AiProviders.providerId(values.get("provider"));
         String label = AiProviders.preset(provider).label();

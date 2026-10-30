@@ -51,6 +51,14 @@ public class IntegrationController {
         return ResponseEntity.ok(integrationService.test(id, values));
     }
 
+    @PostMapping("/openai/models")
+    @PreAuthorize("hasAuthority('integrations.update')")
+    @Operation(summary = "List the models the selected AI provider offers, marked free or paid")
+    public ResponseEntity<Map<String, Object>> aiModels(@RequestBody(required = false) IntegrationConfigRequest request) {
+        Map<String, String> values = request == null ? null : request.getValues();
+        return ResponseEntity.ok(integrationService.listAiModels(values));
+    }
+
     @PostMapping("/{id}/sync")
     @PreAuthorize("hasAuthority('integrations.update')")
     @Operation(summary = "Sync integration data")

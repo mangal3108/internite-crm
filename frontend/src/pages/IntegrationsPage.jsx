@@ -5,6 +5,7 @@ import {
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useIntegrationsStore } from '../store/integrationsStore'
+import { integrationsAPI } from '../services/api'
 import ScreenModalPortal from '../components/ui/ScreenModalPortal'
 import InfoHint from '../components/ui/InfoHint'
 
@@ -296,6 +297,90 @@ function getErrorMessage(err, fallback) {
 }
 
 /* ── Setup Modal ── */
+const MODEL_TIERS = {
+  free:        { label: 'Free',        free: true,  className: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300' },
+  free_tier:   { label: 'Free tier',   free: true,  className: 'bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300' },
+  self_hosted: { label: 'Self-hosted', free: true,  className: 'bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300' },
+  paid:        { label: 'Paid',        free: false, className: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300' },
+  unknown:     { label: 'Check price', free: false, className: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300' },
+}
+const TIER_NOTES = {
+  free_tier: 'Free tier: usable on the provider’s free plan with rate limits.',
+  paid: 'Paid: billed per use by the provider.',
+  self_hosted: 'Self-hosted: runs on your own machine, no usage charges.',
+}
+
+// Loads the provider's model list and lets the user pick one, grouped Free / Paid.
+function AiModelPicker({ values, selected, onPick, models, setModels }) {
+  const [loading, setLoading] = useState(false)
+  const [filter, setFilter] = useState('')
+  const [tab, setTab] = useState('all')
+
+  const load = async () => {
+    setLoading(true)
+    try {
+      const result = await integrationsAPI.aiModels(values)
+      setModels({ list: Array.isArray(result?.models) ? result.models : [], pricing: result?.pricing })
+    } catch (err) {
+      toast.error(getErrorMessage(err, 'Could not load models. You can still type a model name.'))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const list = models?.list || []
+  const shown = list.filter(m => {
+    const tier = MODEL_TIERS[m.tier] || MODEL_TIERS.unknown
+    if (tab === 'free' && !tier.free) return false
+    if (tab === 'paid' && tier.free) return false
+    const q = filter.trim().toLowerCase()
+    return !q || m.id.toLowerCase().includes(q) || String(m.name || '').toLowerCase().includes(q)
+  })
+  const freeCount = list.filter(m => (MODEL_TIERS[m.tier] || MODEL_TIERS.unknown).free).length
+
+  return (
+    <div className="mt-1.5">
+      <button type="button" onClick={load} disabled={loading}
+        className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-lg border border-brand-300 dark:border-brand-800 text-brand-700 dark:text-brand-300 bg-brand-50 dark:bg-brand-950/30 hover:bg-brand-100 disabled:opacity-50">
+        <RefreshCw className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} />
+        {loading ? 'Loading models…' : models ? 'Reload models' : 'Load models'}
+      </button>
+
+      {models && (
+        <div className="mt-2 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+          <div className="flex items-center gap-1.5 p-2 border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60">
+            {[['all', `All ${list.length}`], ['free', `Free ${freeCount}`], ['paid', `Paid ${list.length - freeCount}`]].map(([id, label]) => (
+              <button key={id} type="button" onClick={() => setTab(id)}
+                className={`text-[11px] font-semibold px-2 py-0.5 rounded-md ${tab === id ? 'bg-white dark:bg-slate-700 shadow-sm text-slate-900 dark:text-white' : 'text-slate-500'}`}>
+                {label}
+              </button>
+            ))}
+            <input value={filter} onChange={e => setFilter(e.target.value)} placeholder="Search models"
+              className="ml-auto w-36 text-[11px] rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-2 py-1 outline-none" />
+          </div>
+          <div className="max-h-56 overflow-y-auto">
+            {shown.length === 0 && <p className="p-3 text-[11px] text-slate-400">No models match.</p>}
+            {shown.map(m => {
+              const tier = MODEL_TIERS[m.tier] || MODEL_TIERS.unknown
+              return (
+                <button key={m.id} type="button" onClick={() => onPick(m.id)}
+                  className={`w-full flex items-center gap-2 px-3 py-1.5 text-left text-xs hover:bg-slate-50 dark:hover:bg-slate-800 ${selected === m.id ? 'bg-brand-50 dark:bg-brand-950/30' : ''}`}>
+                  <span className="font-mono truncate flex-1 text-slate-800 dark:text-slate-200" title={m.name}>{m.id}</span>
+                  {m.price && <span className="text-[10px] text-slate-400 whitespace-nowrap">{m.price}</span>}
+                  <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full whitespace-nowrap ${tier.className}`}>{tier.label}</span>
+                </button>
+              )
+            })}
+          </div>
+          {TIER_NOTES[models.pricing] && (
+            <p className="px-3 py-1.5 text-[10px] text-slate-400 border-t border-slate-100 dark:border-slate-800">{TIER_NOTES[models.pricing]}</p>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function SetupModal({ integration, onClose }) {
   const {
     configs,
@@ -312,6 +397,7 @@ function SetupModal({ integration, onClose }) {
   const [values, setValues] = useState({ ...(integration.defaultValues || {}), ...saved })
   const [revealed, setRevealed] = useState({})
   const [tested, setTested] = useState(false)
+  const [aiModels, setAiModels] = useState(null)
   const isConnected = !!connected[integration.id]
 
   const update = (key, val) => {
@@ -319,6 +405,7 @@ function SetupModal({ integration, onClose }) {
       // New provider: take its URL and suggested model; the old key belongs to the old provider.
       const preset = aiProvider(val)
       setValues(p => ({ ...p, provider: val, baseUrl: preset.baseUrl, model: preset.model, apiKey: '' }))
+      setAiModels(null)
       return
     }
     setValues(p => ({ ...p, [key]: val }))
@@ -515,6 +602,10 @@ function SetupModal({ integration, onClose }) {
                 </div>
                 )}
                 {f.hint && <p className="text-[10px] text-slate-400 mt-0.5">{f.hint}</p>}
+                {integration.id === 'openai' && f.key === 'model' && (
+                  <AiModelPicker values={values} selected={values.model} onPick={id => update('model', id)}
+                    models={aiModels} setModels={setAiModels} />
+                )}
               </div>
             ))}
           </div>

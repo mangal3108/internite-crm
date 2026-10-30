@@ -318,6 +318,7 @@ export const integrationsAPI = {
   save:        (id, values) => api.put(`/integrations/${id}`, { values }),
   test:        (id, values) => api.post(`/integrations/${id}/test`, { values }, { timeout: 30000 }),
   sync:        (id, values) => api.post(`/integrations/${id}/sync`, { values }, { timeout: 45000 }),
+  aiModels:    (values)     => api.post('/integrations/openai/models', { values }, { timeout: 30000 }),
   disconnect:  (id)         => api.delete(`/integrations/${id}`),
 }
 
