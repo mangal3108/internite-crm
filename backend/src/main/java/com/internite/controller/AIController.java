@@ -31,10 +31,20 @@ public class AIController {
         List<Map<String, String>> messages = body.get("messages");
         try {
             SarathiAgentService.Reply reply = sarathiAgentService.chat(messages);
-            return ResponseEntity.ok(Map.of("response", reply.response(), "toolsUsed", reply.toolsUsed()));
+            Map<String, Object> result = new java.util.LinkedHashMap<>();
+            result.put("response", reply.response());
+            result.put("toolsUsed", reply.toolsUsed());
+            if (reply.notice() != null) {
+                result.put("notice", reply.notice());
+            }
+            return ResponseEntity.ok(result);
         } catch (Exception ex) {
             log.warn("Sarathi agent failed, using plain chat: {}", ex.getMessage());
-            return ResponseEntity.ok(Map.of("response", aiService.chat(messages), "toolsUsed", List.of()));
+            return ResponseEntity.ok(Map.of(
+                "response", aiService.chat(messages),
+                "toolsUsed", List.of(),
+                "notice", "Sarathi could not read your CRM data for this answer: "
+                    + (ex.getMessage() == null ? ex.getClass().getSimpleName() : ex.getMessage())));
         }
     }
 

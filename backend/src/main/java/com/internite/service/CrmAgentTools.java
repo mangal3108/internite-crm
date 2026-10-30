@@ -31,7 +31,7 @@ import java.util.Set;
 @Slf4j
 public class CrmAgentTools {
 
-    private static final int MAX_RESULT_CHARS = 14_000;
+    private static final int MAX_RESULT_CHARS = 8_000;
     private static final int MAX_TEXT_CHARS = 300;
     private static final Set<String> HIDDEN_FIELDS = Set.of(
         "password", "tenantId", "tenant_id", "deleted", "rawPayload", "avatarUrl", "createdBy", "updatedBy",

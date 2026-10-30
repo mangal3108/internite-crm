@@ -74,6 +74,35 @@ class SarathiAgentServiceTest {
 
     @Test
     @SuppressWarnings("unchecked")
+    void chat_answersFromFetchedDataWhenProviderRefusesALaterStep() {
+        Map<String, Object> toolTurn = new HashMap<>();
+        toolTurn.put("tool_calls", List.of(Map.of(
+            "id", "call-1",
+            "function", Map.of("name", "search_leads", "arguments", "{}"))));
+        Map<String, Object> answer = Map.of("content", "You have 1 lead: h.");
+
+        when(tools.definitions()).thenReturn(List.of(Map.of("type", "function")));
+        when(tools.execute("search_leads", "{}")).thenReturn("{\"total\":1,\"leads\":[{\"name\":\"h\"}]}");
+        when(aiService.chatCompletion(any(), notNull(), anyInt(), anyDouble()))
+            .thenReturn((Map) toolTurn)
+            .thenThrow(new HttpClientErrorException(HttpStatus.PAYLOAD_TOO_LARGE, "Request Entity Too Large",
+                "{\"error\":{\"message\":\"Request too large for model: tokens per minute limit 8000\"}}".getBytes(), null));
+        when(aiService.chatCompletion(any(), isNull(), anyInt(), anyDouble())).thenReturn((Map) answer);
+        when(aiService.messageText(answer)).thenReturn("You have 1 lead: h.");
+
+        SarathiAgentService.Reply reply = agent.chat(List.of(Map.of("role", "user", "content", "Total leads we have")));
+
+        assertEquals("You have 1 lead: h.", reply.response());
+        assertEquals(List.of("search_leads"), reply.toolsUsed());
+        assertTrue(reply.notice().contains("HTTP 413") && reply.notice().contains("tokens per minute"), reply.notice());
+        ArgumentCaptor<List<Map<String, ?>>> sent = ArgumentCaptor.forClass(List.class);
+        verify(aiService).chatCompletion(sent.capture(), isNull(), anyInt(), anyDouble());
+        assertTrue(String.valueOf(sent.getValue().get(0).get("content")).contains("\"name\":\"h\""), "fetched leads reach the model");
+        assertEquals("Total leads we have", sent.getValue().get(1).get("content"));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
     void chat_fallsBackToOverviewSnapshotWhenModelRejectsTools() {
         Map<String, Object> answer = Map.of("content", "This month you have 40 leads.");
         when(tools.definitions()).thenReturn(List.of(Map.of("type", "function")));

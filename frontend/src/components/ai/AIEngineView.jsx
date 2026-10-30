@@ -99,6 +99,11 @@ function ChatTurn({ message }) {
           Looked at: {message.toolsUsed.map((t) => TOOL_LABELS[t] || t).join(' · ')}
         </p>
       )}
+      {message.notice && (
+        <p className="mt-1 flex items-start gap-1 pl-4 text-[11px] text-amber-600 dark:text-amber-400">
+          <AlertCircle className="mt-px h-3 w-3 flex-shrink-0" />{message.notice}
+        </p>
+      )}
     </motion.div>
   )
 }
@@ -128,7 +133,7 @@ function AskSarathi() {
       const res = await aiAPI.chat([...history, { role: 'user', content: msg }])
       const reply = res?.response || 'No response.'
       const toolsUsed = Array.isArray(res?.toolsUsed) ? res.toolsUsed : []
-      setMessages((p) => [...p.slice(0, -1), { role: 'assistant', content: reply, toolsUsed }])
+      setMessages((p) => [...p.slice(0, -1), { role: 'assistant', content: reply, toolsUsed, notice: res?.notice }])
     } catch (e) {
       setMessages((p) => [...p.slice(0, -1), { role: 'assistant', content: `Error: ${e.message}` }])
       toast.error(e.message)

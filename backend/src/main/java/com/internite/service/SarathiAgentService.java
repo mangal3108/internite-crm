@@ -6,7 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.HttpStatusCodeException;
 
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -28,13 +28,17 @@ import java.util.Set;
 public class SarathiAgentService {
 
     private static final int MAX_ROUNDS = 6;
-    private static final int MAX_HISTORY = 20;
+    private static final int MAX_HISTORY = 12;
+    // Kept modest so free plans with small per-minute token limits (e.g. Groq ~8k) can run the loop.
+    private static final int MAX_REPLY_TOKENS = 1000;
+    private static final int MAX_FALLBACK_DATA_CHARS = 9_000;
     private static final ZoneId ZONE = ZoneId.of("Asia/Kolkata");
 
     private final AIService aiService;
     private final CrmAgentTools tools;
 
-    public record Reply(String response, List<String> toolsUsed) {}
+    /** {@code notice} is set when Sarathi had to answer with less data than it wanted, and says why. */
+    public record Reply(String response, List<String> toolsUsed, String notice) {}
 
     public Reply chat(List<Map<String, String>> history) {
         List<Map<String, Object>> messages = new ArrayList<>();
@@ -48,12 +52,13 @@ public class SarathiAgentService {
         }
 
         Set<String> used = new LinkedHashSet<>();
+        List<String> results = new ArrayList<>();
         try {
             for (int round = 0; round < MAX_ROUNDS; round++) {
-                Map<String, ?> reply = aiService.chatCompletion(messages, tools.definitions(), 1500, 0.2);
+                Map<String, ?> reply = aiService.chatCompletion(messages, tools.definitions(), MAX_REPLY_TOKENS, 0.2);
                 List<?> calls = reply.get("tool_calls") instanceof List<?> l ? l : List.of();
                 if (calls.isEmpty()) {
-                    return new Reply(aiService.messageText(reply), List.copyOf(used));
+                    return new Reply(aiService.messageText(reply), List.copyOf(used), null);
                 }
                 // Echo the assistant turn (with its tool calls), then one tool message per call.
                 Map<String, Object> assistant = new LinkedHashMap<>();
@@ -68,35 +73,67 @@ public class SarathiAgentService {
                     String name = String.valueOf(fn.get("name"));
                     String args = fn.get("arguments") == null ? "{}" : String.valueOf(fn.get("arguments"));
                     used.add(name);
+                    String result = tools.execute(name, args);
+                    results.add(name + ": " + result);
                     messages.add(Map.of(
                         "role", "tool",
                         "tool_call_id", String.valueOf(call.get("id")),
-                        "content", tools.execute(name, args)));
+                        "content", result));
                 }
             }
-            // Out of rounds: ask for an answer with what has been gathered so far.
-            messages.add(Map.of("role", "user", "content",
-                "Answer now using only the data already retrieved above. Do not call more tools."));
-            Map<String, ?> last = aiService.chatCompletion(messages, null, 1500, 0.2);
-            return new Reply(aiService.messageText(last), List.copyOf(used));
-        } catch (HttpClientErrorException ex) {
-            // Some models reject the `tools` field; answer from an overview snapshot instead.
-            if (used.isEmpty() && ex.getStatusCode().value() == 400) {
-                log.info("Model rejected tool calling, answering from a CRM snapshot: {}", ex.getStatusText());
-                return snapshotAnswer(messages);
+            // Out of rounds: answer with what has been gathered so far.
+            return answerFromData(question(safe), results, used, "Sarathi stopped looking after " + MAX_ROUNDS + " lookups.");
+        } catch (HttpStatusCodeException ex) {
+            // The provider refused a step (model without tool support, request too large for the plan's
+            // token limit, rate limit, a malformed tool call...). Answer from data we can still give it.
+            String reason = providerReason(ex);
+            log.warn("Sarathi agent step failed after tools {}: {}", used, reason);
+            if (results.isEmpty()) {
+                used.add("crm_overview");
+                results.add("crm_overview (this month): " + tools.execute("crm_overview", "{\"period\":\"thisMonth\"}"));
             }
-            throw ex;
+            return answerFromData(question(safe), results, used, reason);
         }
     }
 
-    private Reply snapshotAnswer(List<Map<String, Object>> messages) {
-        String snapshot = tools.execute("crm_overview", "{\"period\":\"thisMonth\"}");
-        List<Map<String, Object>> withData = new ArrayList<>(messages);
-        withData.set(0, Map.of("role", "system", "content", systemPrompt()
-            + "\n\nThis model cannot look data up, so only this month's overview is available:\n" + snapshot
-            + "\nIf the question needs other data, say so and suggest switching to a model that supports tool calling."));
-        Map<String, ?> reply = aiService.chatCompletion(withData, null, 1500, 0.2);
-        return new Reply(aiService.messageText(reply), List.of("crm_overview"));
+    /** One plain request (no tools) with the question and the data gathered so far, kept small. */
+    private Reply answerFromData(String question, List<String> results, Set<String> used, String reason) {
+        StringBuilder data = new StringBuilder();
+        for (String r : results) {
+            if (data.length() + r.length() > MAX_FALLBACK_DATA_CHARS) {
+                data.append("\n(more data was retrieved but left out to keep the request small)");
+                break;
+            }
+            data.append("\n").append(r);
+        }
+        List<Map<String, Object>> request = List.of(
+            Map.of("role", "system", "content", systemPrompt()
+                + "\n\nNo more lookups are possible for this question. Answer only from this CRM data; "
+                + "if it is not enough, say what is missing:\n" + data),
+            Map.of("role", "user", "content", question));
+        Map<String, ?> reply = aiService.chatCompletion(request, null, MAX_REPLY_TOKENS, 0.2);
+        return new Reply(aiService.messageText(reply), List.copyOf(used), reason);
+    }
+
+    private static String question(List<Map<String, String>> history) {
+        for (int i = history.size() - 1; i >= 0; i--) {
+            if ("user".equals(history.get(i).get("role")) && history.get(i).get("content") != null) {
+                return history.get(i).get("content");
+            }
+        }
+        return "Summarise my CRM.";
+    }
+
+    /** Short, user-readable reason from the provider's error body (OpenAI-style {"error":{"message":...}}). */
+    private static String providerReason(HttpStatusCodeException ex) {
+        String body = ex.getResponseBodyAsString();
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile("\"message\"\\s*:\\s*\"((?:[^\"\\\\]|\\\\.)*)\"").matcher(body == null ? "" : body);
+        String detail = m.find() ? m.group(1).replace("\\\"", "\"") : ex.getStatusText();
+        if (detail != null && detail.length() > 180) {
+            detail = detail.substring(0, 180) + "…";
+        }
+        return "The AI provider refused a lookup step (HTTP " + ex.getStatusCode().value() + ")"
+            + (detail == null || detail.isBlank() ? "." : ": " + detail);
     }
 
     private String systemPrompt() {
