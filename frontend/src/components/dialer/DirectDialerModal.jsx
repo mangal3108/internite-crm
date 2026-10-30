@@ -9,7 +9,7 @@ import { callsAPI } from '../../services/api'
 import { useAuthStore } from '../../store/authStore'
 import { useSoftphoneStore } from '../../store/softphoneStore'
 import PhoneInputWithCountry from '../ui/PhoneInputWithCountry'
-import TwilioNumbersHint, { numberLabel, VerifiedNumbersPicker } from './TwilioNumbersHint'
+import TwilioNumbersHint, { callerIdLabel, VerifiedNumbersPicker } from './TwilioNumbersHint'
 
 const DIALER_MODE_KEY = 'internite_dialer_call_mode'
 
@@ -601,7 +601,7 @@ export default function DirectDialerModal({ isOpen, onClose, initialNumber = '',
                     {availableNumbers.length > 0 ? (
                       availableNumbers.map((num, idx) => (
                         <option key={num} value={num}>
-                          {num} {numberLabel(callOptions, num, idx)}
+                          {callerIdLabel(callOptions, num, idx)}
                         </option>
                       ))
                     ) : (

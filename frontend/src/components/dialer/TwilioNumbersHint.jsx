@@ -1,3 +1,5 @@
+import { formatPhoneWithCountry } from '../ui/PhoneInputWithCountry'
+
 // Explains the caller-ID list (empty account, trial limits) instead of leaving it silently blank.
 export default function TwilioNumbersHint({ callOptions }) {
   if (!callOptions) return null
@@ -38,6 +40,11 @@ export function numberLabel(callOptions, num, idx) {
   return idx === 0 ? '(Default Twilio Line)' : `(Line ${idx + 1})`
 }
 
+// Caller ID option text: number with its country, then its role, e.g. "+1 516 529 0758 · United States (Twilio number)".
+export function callerIdLabel(callOptions, num, idx) {
+  return `${formatPhoneWithCountry(num)} ${numberLabel(callOptions, num, idx)}`
+}
+
 // Hands the number (and lead) to the on-screen Browser Phone, which talks through this computer.
 export function OpenSoftphoneButton({ number, lead, onOpened }) {
   return (
@@ -76,7 +83,7 @@ export function VerifiedNumbersPicker({ callOptions, onPick }) {
           onClick={() => onPick(num)}
           className="text-[11px] font-mono px-2 py-0.5 rounded-full border border-brand-300 dark:border-brand-800 bg-brand-50 dark:bg-brand-950/40 text-brand-700 dark:text-brand-300 hover:bg-brand-100"
         >
-          {num}
+          {formatPhoneWithCountry(num)}
         </button>
       ))}
     </div>

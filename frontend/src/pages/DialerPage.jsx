@@ -9,7 +9,7 @@ import { callsAPI } from '../services/api'
 import { useAuthStore } from '../store/authStore'
 import { useSoftphoneStore } from '../store/softphoneStore'
 import PhoneInputWithCountry from '../components/ui/PhoneInputWithCountry'
-import TwilioNumbersHint, { numberLabel, VerifiedNumbersPicker } from '../components/dialer/TwilioNumbersHint'
+import TwilioNumbersHint, { callerIdLabel, VerifiedNumbersPicker } from '../components/dialer/TwilioNumbersHint'
 
 // 'laptop' = Browser Phone (this computer's mic/speakers), 'direct' = ring the agent's phone then bridge, 'ai' = voice agent
 const DIALER_MODE_KEY = 'internite_dialer_call_mode'
@@ -501,7 +501,7 @@ export default function DialerPage() {
                     {availableNumbers.length > 0 ? (
                       availableNumbers.map((num, idx) => (
                         <option key={num} value={num}>
-                          {num} {numberLabel(callOptions, num, idx)}
+                          {callerIdLabel(callOptions, num, idx)}
                         </option>
                       ))
                     ) : (

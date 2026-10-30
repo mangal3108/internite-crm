@@ -31,6 +31,41 @@ export const COUNTRY_CODES = [
   { code: '+81',  country: 'Japan',          iso: 'JP', flag: '🇯🇵' },
 ]
 
+// +1 is shared by the US and Canada; Canadian numbers are told apart by area code.
+const CANADA_AREA_CODES = new Set(('204 226 236 249 250 263 289 306 343 354 365 367 368 382 403 416 418 428 431 437 438 450 '
+  + '468 474 506 514 519 548 579 581 584 587 604 613 639 647 672 683 705 709 742 753 778 780 782 807 819 825 867 873 879 902 905').split(' '))
+
+/** Country entry for an international number (+...), or null when it is not one we know. */
+export function phoneCountry(number) {
+  const digits = '+' + String(number || '').replace(/[^\d]/g, '')
+  if (!String(number || '').trim().startsWith('+') || digits.length < 4) return null
+  const byLongestCode = [...COUNTRY_CODES].sort((a, b) => b.code.length - a.code.length)
+  const match = byLongestCode.find((c) => digits.startsWith(c.code))
+  if (!match) return null
+  if (match.code === '+1') {
+    const iso = CANADA_AREA_CODES.has(digits.slice(2, 5)) ? 'CA' : 'US'
+    return COUNTRY_CODES.find((c) => c.iso === iso)
+  }
+  return match
+}
+
+/**
+ * Number with spacing and its country, e.g. "+1 516 529 0758 · United States".
+ * Country names, not flag emoji: Windows does not draw flag emoji.
+ */
+export function formatPhoneWithCountry(number) {
+  const raw = String(number || '').trim()
+  const country = phoneCountry(raw)
+  if (!country) return raw
+  const local = raw.replace(/[^\d]/g, '').slice(country.code.length - 1)
+  const spaced = country.code === '+1' && local.length === 10
+    ? `${local.slice(0, 3)} ${local.slice(3, 6)} ${local.slice(6)}`
+    : local.length === 10
+      ? `${local.slice(0, 5)} ${local.slice(5)}`
+      : local
+  return `${country.code} ${spaced} · ${country.country}`
+}
+
 /**
  * Parses a raw phone string into { countryCode, localNumber }
  */

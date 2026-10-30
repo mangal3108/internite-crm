@@ -4,8 +4,8 @@ import {
 } from 'lucide-react'
 import { callsAPI } from '../../services/api'
 import { useSoftphoneStore } from '../../store/softphoneStore'
-import PhoneInputWithCountry from '../ui/PhoneInputWithCountry'
-import TwilioNumbersHint, { numberLabel, VerifiedNumbersPicker } from './TwilioNumbersHint'
+import PhoneInputWithCountry, { formatPhoneWithCountry, phoneCountry } from '../ui/PhoneInputWithCountry'
+import TwilioNumbersHint, { callerIdLabel, VerifiedNumbersPicker } from './TwilioNumbersHint'
 
 const KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '*', '0', '#']
 
@@ -104,11 +104,12 @@ export default function BrowserSoftphone() {
         <div className="p-5 bg-gradient-to-b from-slate-900 to-slate-950 text-white space-y-4">
           <div className="text-center space-y-1">
             <p className="text-lg font-bold font-mono">{s.toNumber}</p>
+            {phoneCountry(s.toNumber) && <p className="text-xs text-slate-400">{phoneCountry(s.toNumber).country}</p>}
             {s.lead?.name && (
               <p className="text-xs text-slate-400 flex items-center justify-center gap-1"><User className="w-3 h-3" />{s.lead.name}</p>
             )}
             <p className="text-3xl font-mono font-bold pt-1">{s.status === 'in-call' ? formatTime(s.seconds) : '··:··'}</p>
-            <p className="text-[11px] text-slate-400">From {s.fromNumber}</p>
+            <p className="text-[11px] text-slate-400">From {formatPhoneWithCountry(s.fromNumber)}</p>
           </div>
 
           {/* Mic level */}
@@ -181,7 +182,7 @@ export default function BrowserSoftphone() {
             >
               {numbers.length === 0 && <option value="">No caller ID available</option>}
               {numbers.map((num, idx) => (
-                <option key={num} value={num}>{num} {numberLabel(callOptions, num, idx)}</option>
+                <option key={num} value={num}>{callerIdLabel(callOptions, num, idx)}</option>
               ))}
             </select>
             <TwilioNumbersHint callOptions={callOptions} />

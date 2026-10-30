@@ -7,7 +7,7 @@ import toast from 'react-hot-toast'
 import { callsAPI, leadsAPI } from '../../services/api'
 import { useAuthStore } from '../../store/authStore'
 import PhoneInputWithCountry from '../ui/PhoneInputWithCountry'
-import TwilioNumbersHint, { numberLabel, VerifiedNumbersPicker, OpenSoftphoneButton } from '../dialer/TwilioNumbersHint'
+import TwilioNumbersHint, { callerIdLabel, VerifiedNumbersPicker, OpenSoftphoneButton } from '../dialer/TwilioNumbersHint'
 import InfoHint from '../ui/InfoHint'
 
 const SETUP_CARDS = [
@@ -536,7 +536,7 @@ export default function CallLeadModal({ lead, onClose, onCallSuccess }) {
                   {availableNumbers.length > 0 ? (
                     availableNumbers.map((num, idx) => (
                       <option key={num} value={num}>
-                        {num} {numberLabel(callOptions, num, idx)}
+                        {callerIdLabel(callOptions, num, idx)}
                       </option>
                     ))
                   ) : (
